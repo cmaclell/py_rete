@@ -3,7 +3,8 @@ from rete.common import FIELDS
 
 class ConstantTestNode:
 
-    def __init__(self, field_to_test, field_must_equal=None, amem=None, children=None):
+    def __init__(self, field_to_test, field_must_equal=None, amem=None,
+                 children=None):
         """
         :type field_to_test: str
         :type children: list of ConstantTestNode
@@ -15,7 +16,8 @@ class ConstantTestNode:
         self.children = children if children else []
 
     def __repr__(self):
-        return "<ConstantTestNode %s=%s?>" % (self.field_to_test, self.field_must_equal)
+        return "<ConstantTestNode %s=%s?>" % (self.field_to_test,
+                                              self.field_must_equal)
 
     def dump(self):
         return "%s=%s?" % (self.field_to_test, self.field_must_equal)
@@ -61,7 +63,8 @@ class ConstantTestNode:
         :type parent: ConstantTestNode
         """
         for child in parent.children:
-            if child.field_to_test == field and child.field_must_equal == symbol:
+            if (child.field_to_test == field and child.field_must_equal ==
+                    symbol):
                 return child
         new_node = ConstantTestNode(field, symbol, children=[])
         parent.children.append(new_node)

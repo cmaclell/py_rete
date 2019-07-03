@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import cStringIO
-
 from rete.bind_node import BindNode
 from rete.filter_node import FilterNode
 from rete.ncc_node import NccNode, NccPartnerNode
@@ -50,26 +48,26 @@ class Network:
                     child.left_activation(jr.owner, None)
 
     def dump(self):
-        self.buf = cStringIO.StringIO()
-        self.buf.write('digraph {\n')
+        self.buf = ""
+        self.buf += 'digraph {\n'
         self.dump_beta(self.beta_root)
         self.dump_alpha(self.alpha_root)
         self.dump_alpha2beta(self.alpha_root)
-        self.buf.write('}')
-        return self.buf.getvalue()
+        self.buf += '}'
+        return self.buf
 
     def dump_alpha(self, node):
         """
         :type node: ConstantTestNode
         """
         if node == self.alpha_root:
-            self.buf.write("    subgraph cluster_0 {\n")
-            self.buf.write("    label = alpha\n")
+            self.buf += "    subgraph cluster_0 {\n"
+            self.buf += "    label = alpha\n"
         for child in node.children:
-            self.buf.write('    "%s" -> "%s";\n' % (node.dump(), child.dump()))
+            self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
             self.dump_alpha(child)
         if node == self.alpha_root:
-            self.buf.write("    }\n")
+            self.buf += "    }\n"
 
     def dump_alpha2beta(self, node):
         """
@@ -77,7 +75,7 @@ class Network:
         """
         if node.amem:
             for child in node.amem.successors:
-                self.buf.write('    "%s" -> "%s";\n' % (node.dump(), child.dump()))
+                self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
         for child in node.children:
             self.dump_alpha2beta(child)
 
@@ -86,15 +84,16 @@ class Network:
         :type node: BetaNode
         """
         if node == self.beta_root:
-            self.buf.write("    subgraph cluster_1 {\n")
-            self.buf.write("    label = beta\n")
+            self.buf += "    subgraph cluster_1 {\n"
+            self.buf += "    label = beta\n"
         if isinstance(node, NccPartnerNode):
-            self.buf.write('    "%s" -> "%s";\n' % (node.dump(), node.ncc_node.dump()))
+            self.buf += '    "%s" -> "%s";\n' % (node.dump(),
+                                                 node.ncc_node.dump())
         for child in node.children:
-            self.buf.write('    "%s" -> "%s";\n' % (node.dump(), child.dump()))
+            self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
             self.dump_beta(child)
         if node == self.beta_root:
-            self.buf.write("    }\n")
+            self.buf += "    }\n"
 
     def build_or_share_alpha_memory(self, condition):
         """

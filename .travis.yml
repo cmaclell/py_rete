@@ -19,7 +19,6 @@ deploy:
       secure: BJcZyhewR0zzclXix62AKnjXrkFiA06WxnRifzvgdG2ZjIoHnoUE6tN1X46Pbm/RQumkDLAtEqKkjg6DKfYYj0AC1Ukr7A4ZQZFeBQAIeqcy/29zQosBc2XDAZ6ZEaBZdnOgg82XTSGwbPYSyL5YotsC0q1bCI1mqbWDbZrj4sqMgXpiUZkpsZS87jpUGXrduXA3UN+g5zlckGvUeyKJUQHrFFJ9ZalnasLioWquPbtjvaXDz/jp2HtVsYWR2ivzZbzVmtLkQ2rfAvUP9qtgMrGOErdGZYAT/U4LL7W2aZsAmtRs9Ynfqp0UNM2zMcFanXaXFVHrB8F4RyRFEKRG64uUt7DEuUJnB2chuor48eIX4e5k9H/wQNJqnejTVLKFs6DVxvxUyk9F02Nc+wgrQtgh8zYkU5eaUaSW9Ccs27CPehVT1I+OmRpcRbxgy3mAg83ngIg+Nb/ZToQru/6wUTAevxav35AVp4fH1tMjxDHwSR+vPWgLd/mhi3yLTeFEsMk14rENzp2zVl++Joxgv+9OiWRVzfj8UUj9U79EHuuYasFQ3zcR/Cc+1GMwh127BwSJZvtXPfzwGwaXT5uQf0eOENX8u6QtzyPevYvWY3oix41X8sFuCvwcuU5tFWU4N8JZNCpbTFCJCQfF80OPjm98SM8j045MQRE5P0ixcmE=
     on:
       tags: true
-      all_branches: true
   - provider: pypi
     user: cmaclell
     skip_existing: true

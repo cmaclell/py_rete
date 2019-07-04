@@ -3,6 +3,10 @@ from py_rete.beta import BetaNode
 
 
 class NegativeJoinResult:
+    """
+    A new class to store the result of a negative join. Similar to a token, it
+    is owned by a token.
+    """
 
     def __init__(self, owner, wme):
         """
@@ -14,10 +18,27 @@ class NegativeJoinResult:
 
 
 class NegativeNode(BetaNode):
+    """
+    A beta network class that only passes on tokens when there is no match.
+
+    The left activation is called by the parent beta node.
+    The right activation is called from the alpha network (amem).
+    Test are similar to those that appear in JoinNode
+
+    TODO:
+        - should negative node be a subclass of JoinNode?
+            - perform_join_test is identical to JoinNode
+            - doesn't have Has, not sure why JoinNode does though.
+        - should this have a kind?
+
+    """
 
     def __init__(self, children=None, parent=None, amem=None, tests=None):
         """
-        :type amem: rete.alpha.AlphaMemory
+        :type children:
+        :type parent: BetaNode
+        :type amem: AlphaMemory
+        :type tests: list of TestAtJoinNode
         """
         super(NegativeNode, self).__init__(children=children, parent=parent)
         self.items = []
@@ -48,7 +69,11 @@ class NegativeNode(BetaNode):
         for t in self.items:
             if self.perform_join_test(t, wme):
                 if not t.join_results:
-                    Token.delete_token_and_descendents(t)
+                    # TODO: According to doorenbos this should be
+                    # delete_descendents_of_token instead (pg. 43).
+                    # write tests to confirm.
+                    Token.delete_descendents_of_token(t)
+                    # Token.delete_token_and_descendents(t)
                 jr = NegativeJoinResult(t, wme)
                 t.join_results.append(jr)
                 wme.negative_join_result.append(jr)

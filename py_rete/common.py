@@ -197,14 +197,8 @@ class WME:
 
 class Token:
     """
-    Not exactly sure what tokens represent. I think they might be pointers to
-    WME instantiated in alpha/beta memories, so they can be more easily
-    updated.
-
-    This enables some tracking of belief revision, tokens have a parent.
-
-    TODO:
-        - Why do tokens have a single parent?
+    Tokens represent matches within the alpha and beta memories. The parent
+    corresponds to the match that was extended to create the current token.
     """
 
     def __init__(self, parent, wme, node=None, binding=None):
@@ -268,6 +262,14 @@ class Token:
         for t in path:
             binding.update(t.binding)
         return binding
+
+    @classmethod
+    def delete_descendents_of_token(cls, token):
+        """
+        Helper function to delete all the descendent tokens.
+        """
+        for t in token.children:
+            Token.delete_token_and_descendents(t)
 
     @classmethod
     def delete_token_and_descendents(cls, token):

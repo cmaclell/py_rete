@@ -2,6 +2,14 @@ from py_rete.beta import BetaNode
 
 
 class FilterNode(BetaNode):
+    """
+    A beta network class. Takes a code snipit, replaces variables with bound
+    values, executes it. If the code evaluates to True (boolean), then it
+    activates the children with the token/wme
+
+    TODO:
+        - explore use of functions/partials instead of string code snipits
+    """
 
     kind = 'filter-node'
 

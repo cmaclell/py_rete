@@ -3,6 +3,18 @@ from py_rete.beta import BetaNode
 
 
 class BindNode(BetaNode):
+    """
+    A beta network class. This class stores a code snipit, with variables in
+    it. It gets all the bindings from the incoming token, updates them with the
+    current bindings, binds the result to the target variable (to), then
+    activates its children with the updated bindings.
+
+    TODO:
+        - Rewrite code.replace to use something that does all the bindings
+          with a single pass?
+        - Use functions/partials instead of string code snipits, with arg
+          lists that contain variables or constants
+    """
 
     kind = 'bind-node'
 
@@ -18,10 +30,6 @@ class BindNode(BetaNode):
 
     def left_activation(self, token, wme, binding=None):
         """
-        TODO:
-            - Rewrite code.replace to use something that does all the bindings
-              with a single pass?
-
         :type binding: dict
         :type wme: WME
         :type token: Token

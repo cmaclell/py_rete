@@ -1,5 +1,27 @@
 language: python
+sudo: required
+dist: xenial
 python:
-  - "2.7"
-# command to run tests
-script: make test
+- '3.7'
+- pypy3.5-6.0
+install:
+- pip install tox-travis
+- pip install coveralls
+script:
+- tox
+- coveralls
+deploy:
+  - provider: pypi
+    user: cmaclell
+    skip_existing: true
+    distributions: sdist bdist_wheel
+    password:
+      secure: M8XPZ4yDLBZu8/gHWKZEme1SMSRpIDlZwXosO5YTGVN73zmV5tMmgsgKbFOxJudr588NE98WYlAFJSaKCQNflhQwS5UZVuOQl6ZXMRwvxYhUPXIjZyKsp1k/X3GU7VNlLdm3ubOVdXtrnubJCzFJTEAtJzFLyij7nZv33bkCZJwES9xMcvWROvtmUlsD+a3LSaGvq5nGh/41wi1KasG2var7kmhMFK+dcui8RfdTDt7YaQES4pZQYRn+2vH1qA+XFfm99+caFC7GcaNstDP8JvurcUIM3IZ597lpqKNuOd2JUGDmWBhRX8GWLZEIMN2aXYy7vgfrIQDepopZcp49P2u73vFLVgGYTS7DEyGalpJTpgnpbekYHXS+5fbaeOa8lZkcLytlcZIvGdunPzfkhkhYqDI3yjrFueAn9eE1OWGCM3uL/sN+H5r2mk3EKagKviQIumDNI+40E2/33z5BoL3HD7h/xVllwrYPGz+HWZ9bRpCXV4kayHosBYzNU6MESN24O+nOuMSHtDVxS8yoMWeCqoOsKP5BKn6j1NvYf9Hioqr5MZsLLKkq0UD2P0AmANATwVCG6sQsgnWSU0eIOLJQCtwbPcuFQy6GI3JlevbxgqnjjeFmNs8YcL5lWXxnaCpiZStd8XiaeK2u+hs6WBIB3DEbQoKp4hRc7QRbSDE=
+  - provider: pypi
+    user: cmaclell
+    skip_existing: true
+    distributions: sdist bdist_wheel
+    password:
+      secure: M8XPZ4yDLBZu8/gHWKZEme1SMSRpIDlZwXosO5YTGVN73zmV5tMmgsgKbFOxJudr588NE98WYlAFJSaKCQNflhQwS5UZVuOQl6ZXMRwvxYhUPXIjZyKsp1k/X3GU7VNlLdm3ubOVdXtrnubJCzFJTEAtJzFLyij7nZv33bkCZJwES9xMcvWROvtmUlsD+a3LSaGvq5nGh/41wi1KasG2var7kmhMFK+dcui8RfdTDt7YaQES4pZQYRn+2vH1qA+XFfm99+caFC7GcaNstDP8JvurcUIM3IZ597lpqKNuOd2JUGDmWBhRX8GWLZEIMN2aXYy7vgfrIQDepopZcp49P2u73vFLVgGYTS7DEyGalpJTpgnpbekYHXS+5fbaeOa8lZkcLytlcZIvGdunPzfkhkhYqDI3yjrFueAn9eE1OWGCM3uL/sN+H5r2mk3EKagKviQIumDNI+40E2/33z5BoL3HD7h/xVllwrYPGz+HWZ9bRpCXV4kayHosBYzNU6MESN24O+nOuMSHtDVxS8yoMWeCqoOsKP5BKn6j1NvYf9Hioqr5MZsLLKkq0UD2P0AmANATwVCG6sQsgnWSU0eIOLJQCtwbPcuFQy6GI3JlevbxgqnjjeFmNs8YcL5lWXxnaCpiZStd8XiaeK2u+hs6WBIB3DEbQoKp4hRc7QRbSDE=
+    on:
+      tags: true

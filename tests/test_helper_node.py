@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-from rete import Has, Filter, Rule
-from rete.common import WME, Bind
+from rete.common import Has
+from rete.common import Rule
+from rete.common import Filter
+from rete.common import WME
+from rete.common import Bind
 from rete.network import Network
 
 

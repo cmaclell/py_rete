@@ -1,3 +1,7 @@
+# Ignore the authors and changle log, they're auto generated.
+AUTHORS
+ChangeLog
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -89,3 +93,6 @@ ENV/
 .ropeproject
 
 .idea
+
+# vim swap files
+*.swp

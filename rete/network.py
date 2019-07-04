@@ -31,7 +31,8 @@ class Network:
         :type kwargs:
         :type lhs: Rule
         """
-        current_node = self.build_or_share_network_for_conditions(self.beta_root, lhs, [])
+        current_node = self.build_or_share_network_for_conditions(
+            self.beta_root, lhs, [])
         return self.build_or_share_p(current_node, **kwargs)
 
     def remove_production(self, node):
@@ -113,7 +114,8 @@ class Network:
             v = getattr(condition, f)
             if not is_var(v):
                 path.append((f, v))
-        am = ConstantTestNode.build_or_share_alpha_memory(self.alpha_root, path)
+        am = ConstantTestNode.build_or_share_alpha_memory(
+            self.alpha_root, path)
         for w in self.alpha_root.amem.items:
             if condition.test(w):
                 am.activation(w)
@@ -165,7 +167,8 @@ class Network:
         :rtype: JoinNode
         """
         for child in parent.children:
-            if isinstance(child, NegativeNode) and child.amem == amem and child.tests == tests:
+            if (isinstance(child, NegativeNode) and child.amem == amem and
+                    child.tests == tests):
                 return child
         node = NegativeNode(parent=parent, amem=amem, tests=tests)
         parent.children.append(node)
@@ -208,9 +211,11 @@ class Network:
         :type ncc: Ncc
         :type parent: BetaNode
         """
-        bottom_of_subnetwork = self.build_or_share_network_for_conditions(parent, ncc, earlier_conds)
+        bottom_of_subnetwork = self.build_or_share_network_for_conditions(
+            parent, ncc, earlier_conds)
         for child in parent.children:
-            if isinstance(child, NccNode) and child.partner.parent == bottom_of_subnetwork:
+            if (isinstance(child, NccNode) and child.partner.parent ==
+                    bottom_of_subnetwork):
                 return child
         ncc_node = NccNode([], parent)
         ncc_partner = NccPartnerNode([], bottom_of_subnetwork)
@@ -248,7 +253,8 @@ class Network:
         parent.children.append(node)
         return node
 
-    def build_or_share_network_for_conditions(self, parent, rule, earlier_conds):
+    def build_or_share_network_for_conditions(self, parent, rule,
+                                              earlier_conds):
         """
         :type earlier_conds: list of BaseCondition
         :type parent: BetaNode
@@ -258,20 +264,28 @@ class Network:
         conds_higher_up = earlier_conds
         for cond in rule:
             if isinstance(cond, Neg):
-                tests = self.get_join_tests_from_condition(cond, conds_higher_up)
+                tests = self.get_join_tests_from_condition(cond,
+                                                           conds_higher_up)
                 am = self.build_or_share_alpha_memory(cond)
-                current_node = self.build_or_share_negative_node(current_node, am, tests)
+                current_node = self.build_or_share_negative_node(current_node,
+                                                                 am, tests)
             elif isinstance(cond, Has):
                 current_node = self.build_or_share_beta_memory(current_node)
-                tests = self.get_join_tests_from_condition(cond, conds_higher_up)
+                tests = self.get_join_tests_from_condition(cond,
+                                                           conds_higher_up)
                 am = self.build_or_share_alpha_memory(cond)
-                current_node = self.build_or_share_join_node(current_node, am, tests, cond)
+                current_node = self.build_or_share_join_node(current_node, am,
+                                                             tests, cond)
             elif isinstance(cond, Ncc):
-                current_node = self.build_or_share_ncc_nodes(current_node, cond, conds_higher_up)
+                current_node = self.build_or_share_ncc_nodes(current_node,
+                                                             cond,
+                                                             conds_higher_up)
             elif isinstance(cond, Filter):
-                current_node = self.build_or_share_filter_node(current_node, cond)
+                current_node = self.build_or_share_filter_node(current_node,
+                                                               cond)
             elif isinstance(cond, Bind):
-                current_node = self.build_or_share_bind_node(current_node, cond)
+                current_node = self.build_or_share_bind_node(current_node,
+                                                             cond)
             conds_higher_up.append(cond)
         return current_node
 

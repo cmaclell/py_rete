@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from rete.common import Rule, Has, Neg, WME, Token, Ncc
-from rete.network import Network
-from rete.pnode import PNode
+from py_rete.common import Rule, Has, Neg, WME, Token, Ncc
+from py_rete.network import Network
+from py_rete.pnode import PNode
 
 
 def test_network_case0():

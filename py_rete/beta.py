@@ -1,4 +1,4 @@
-from rete.common import Token
+from py_rete.common import Token
 
 
 class BetaNode(object):

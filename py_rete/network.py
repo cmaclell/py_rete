@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
-from rete.bind_node import BindNode
-from rete.filter_node import FilterNode
-from rete.ncc_node import NccNode, NccPartnerNode
-from rete.negative_node import NegativeNode
-from rete.alpha import AlphaMemory, ConstantTestNode
-from rete.join_node import JoinNode, TestAtJoinNode
-from rete.pnode import PNode
-from rete.common import Token
-from rete.common import FIELDS
-from rete.common import Has
-from rete.common import Neg
-from rete.common import Ncc
-from rete.common import is_var
-from rete.common import Filter
-from rete.common import Bind
-from rete.beta import BetaNode
-from rete.beta import BetaMemory
+from py_rete.bind_node import BindNode
+from py_rete.filter_node import FilterNode
+from py_rete.ncc_node import NccNode, NccPartnerNode
+from py_rete.negative_node import NegativeNode
+from py_rete.alpha import AlphaMemory, ConstantTestNode
+from py_rete.join_node import JoinNode, TestAtJoinNode
+from py_rete.pnode import PNode
+from py_rete.common import Token
+from py_rete.common import FIELDS
+from py_rete.common import Has
+from py_rete.common import Neg
+from py_rete.common import Ncc
+from py_rete.common import is_var
+from py_rete.common import Filter
+from py_rete.common import Bind
+from py_rete.beta import BetaNode
+from py_rete.beta import BetaMemory
 
 
 class Network:

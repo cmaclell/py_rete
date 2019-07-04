@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
-from rete.common import Rule
-from rete.common import Has
-from rete.common import Neg
-from rete.common import Filter
-from rete.common import Bind
-from rete.common import Ncc
+from py_rete.common import Rule
+from py_rete.common import Has
+from py_rete.common import Neg
+from py_rete.common import Filter
+from py_rete.common import Bind
+from py_rete.common import Ncc
 
 
 def parse_xml(s):

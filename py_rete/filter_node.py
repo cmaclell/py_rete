@@ -1,4 +1,4 @@
-from rete.beta import BetaNode
+from py_rete.beta import BetaNode
 
 
 class FilterNode(BetaNode):

@@ -1,5 +1,5 @@
 import copy
-from rete.beta import BetaNode
+from py_rete.beta import BetaNode
 
 
 class BindNode(BetaNode):

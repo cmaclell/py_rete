@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from rete.common import Has
-from rete.common import Rule
-from rete.common import Filter
-from rete.common import WME
-from rete.common import Bind
-from rete.network import Network
+from py_rete.common import Has
+from py_rete.common import Rule
+from py_rete.common import Filter
+from py_rete.common import WME
+from py_rete.common import Bind
+from py_rete.network import Network
 
 
 def test_filter_compare():

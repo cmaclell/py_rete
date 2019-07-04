@@ -1,4 +1,4 @@
-from rete.common import FIELDS
+from py_rete.common import FIELDS
 
 
 class ConstantTestNode:

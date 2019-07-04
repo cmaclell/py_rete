@@ -1,9 +1,9 @@
-from rete.utils import parse_xml
-from rete.common import Rule
-from rete.common import Has
-from rete.common import Ncc
-from rete.common import Filter
-from rete.common import Bind
+from py_rete.utils import parse_xml
+from py_rete.common import Rule
+from py_rete.common import Has
+from py_rete.common import Ncc
+from py_rete.common import Filter
+from py_rete.common import Bind
 
 
 def test_xml():

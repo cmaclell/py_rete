@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from rete.common import Has, Rule, WME
-from rete.network import Network
+from py_rete.common import Has, Rule, WME
+from py_rete.network import Network
 
 
 def init_network():

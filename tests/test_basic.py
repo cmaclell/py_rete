@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from rete.common import Has, WME, Ncc
+from py_rete.common import Has, WME, Ncc
 
 
 def test_condition_vars():

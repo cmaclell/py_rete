@@ -1,8 +1,10 @@
 py_rete
 =======
 
+.. image:: https://travis-ci.com/cmaclell/py_rete.svg?branch=master
+    :target: https://travis-ci.com/cmaclell/py_rete
 .. image:: https://coveralls.io/repos/github/cmaclell/py_rete/badge.svg?branch=master
-:target: https://coveralls.io/github/cmaclell/py_rete?branch=master
+    :target: https://coveralls.io/github/cmaclell/py_rete?branch=master
 
 Reference
 ---------

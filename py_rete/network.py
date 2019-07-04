@@ -20,6 +20,19 @@ from py_rete.beta import BetaMemory
 
 
 class Network:
+    """
+    TODO:
+        - Consider extensions from Doorenbois for unlinking (pg. 102).
+        - Add top level function for getting the current set of active wmes
+            - maybe from the top level memory?
+        - Add a top level function to get teh current set of productions that
+          match
+            - Need to track the pnodes somewhere?
+        - Add top level function to fire all matching productions
+          (simultaneously), a cycle in the wme.
+        - Give WMEs a pointer for tracking their dependencies/support, if it
+          goes away they need to be retracted.
+    """
 
     def __init__(self):
         self.alpha_root = ConstantTestNode('no-test', amem=AlphaMemory())
@@ -28,6 +41,9 @@ class Network:
 
     def add_production(self, lhs, **kwargs):
         """
+        TODO:
+            - what does this return? A pnode?
+
         :type kwargs:
         :type lhs: Rule
         """
@@ -36,9 +52,16 @@ class Network:
         return self.build_or_share_p(current_node, **kwargs)
 
     def remove_production(self, node):
+        """
+        TODO:
+            - What is passed in here? a p node?
+        """
         self.delete_node_and_any_unused_ancestors(node)
 
     def add_wme(self, wme):
+        """
+        Adds a wme to the memory.
+        """
         self.alpha_root.activation(wme)
 
     @classmethod
@@ -143,6 +166,10 @@ class Network:
     @classmethod
     def build_or_share_join_node(cls, parent, amem, tests, has):
         """
+        TODO:
+            - Why does this have a `has` arg? This is not in doorenbois
+              implementation?
+
         :type has: Has
         :type parent: BetaNode
         :type amem: AlphaMemory

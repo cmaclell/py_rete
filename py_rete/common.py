@@ -13,6 +13,10 @@ def is_var(v):
 class Has:
     """
     Essentially a pattern/condition to match, can have variables.
+
+    TODO:
+        - Rename as conditions.
+        - Change order to be prefix? idk.
     """
 
     def __init__(self, identifier=None, attribute=None, value=None):
@@ -108,6 +112,8 @@ class Rule(list):
     TODO:
         - Implement an OR equivelent, that gets compiled when added to a
           network into multiple rules.
+        - Need somewhere to store right hand sides? What to do when rules fire.
+          Might need an actual rule or production class.
     """
 
     def __init__(self, *args):
@@ -274,10 +280,12 @@ class Token:
     @classmethod
     def delete_token_and_descendents(cls, token):
         """
-        Yup, don't understand this.
+        Deletes a token and its descendents, but has special cases that make
+        this difficult to understand in isolation.
 
         TODO:
-            - Understand this.
+            - Add optimization for right unlinking (pg 87 of Doorenbois
+              thesis).
 
         :type token: Token
         """

@@ -3,6 +3,9 @@ from py_rete.beta import BetaNode
 
 
 class PNode(BetaNode):
+    """
+    A beta network node that stores the matches for productions.
+    """
 
     kind = 'p'
 

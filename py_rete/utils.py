@@ -8,6 +8,13 @@ from py_rete.common import Bind
 from py_rete.common import Ncc
 
 
+def parse_json(s):
+    """
+    Parse a JSON representation of knowledge.
+    """
+    raise NotImplementedError
+
+
 def parse_xml(s):
     root = ET.fromstring(s)
     result = []

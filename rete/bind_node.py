@@ -1,5 +1,5 @@
 import copy
-from rete.common import BetaNode
+from rete.beta import BetaNode
 
 
 class BindNode(BetaNode):
@@ -18,6 +18,10 @@ class BindNode(BetaNode):
 
     def left_activation(self, token, wme, binding=None):
         """
+        TODO:
+            - Rewrite code.replace to use something that does all the bindings
+              with a single pass?
+
         :type binding: dict
         :type wme: WME
         :type token: Token

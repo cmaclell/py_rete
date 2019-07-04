@@ -1,4 +1,5 @@
-from rete.common import Token, BetaNode
+from rete.common import Token
+from rete.beta import BetaNode
 
 
 class NegativeJoinResult:

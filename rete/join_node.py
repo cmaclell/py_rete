@@ -1,4 +1,4 @@
-from rete.common import BetaNode, Has
+from rete.beta import BetaNode
 
 
 class JoinNode(BetaNode):
@@ -71,7 +71,8 @@ class TestAtJoinNode:
 
     def __repr__(self):
         return "<TestAtJoinNode WME.%s=Condition%s.%s?>" % (
-            self.field_of_arg1, self.condition_number_of_arg2, self.field_of_arg2)
+            self.field_of_arg1, self.condition_number_of_arg2,
+            self.field_of_arg2)
 
     def __eq__(self, other):
         return isinstance(other, TestAtJoinNode) and \

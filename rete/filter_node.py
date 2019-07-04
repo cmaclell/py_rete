@@ -1,5 +1,4 @@
-import copy
-from rete.common import BetaNode
+from rete.beta import BetaNode
 
 
 class FilterNode(BetaNode):

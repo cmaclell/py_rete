@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
-
+"""
+    TODO:
+        - Why is fields at the top? is it mutable?
+"""
 FIELDS = ['identifier', 'attribute', 'value']
 
 
-class BetaNode(object):
-
-    def __init__(self, children=None, parent=None):
-        self.children = children if children else []
-        self.parent = parent
-
-    def dump(self):
-        return "%s %s" % (self.__class__.__name__, id(self))
+def is_var(v):
+    return v.startswith('$')
 
 
 class Has:
+    """
+    Essentially a pattern/condition to match, can have variables.
+    """
 
     def __init__(self, identifier=None, attribute=None, value=None):
         """
+        Constructor.
+
+        TODO:
+            - Can I change the order of these to make them prefix?
+
         (<x> ^self <y>)
         repr as:
         ('$x', 'self', '$y')
@@ -34,13 +39,15 @@ class Has:
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
-               and self.identifier == other.identifier \
-               and self.attribute == other.attribute \
-               and self.value == other.value
+            and self.identifier == other.identifier \
+            and self.attribute == other.attribute \
+            and self.value == other.value
 
     @property
     def vars(self):
         """
+        Returns a list of variables with the labels for the slots they occupy.
+
         :rtype: list
         """
         ret = []
@@ -52,6 +59,12 @@ class Has:
 
     def contain(self, v):
         """
+        Checks if a variable is in a pattern. Returns True if it is, otherwise
+        it returns an empty string.
+
+        TODO:
+            - Why does this return an empty string on failure?
+
         :type v: Var
         :rtype: bool
         """
@@ -63,6 +76,8 @@ class Has:
 
     def test(self, w):
         """
+        Checks if a pattern matches a working memory element.
+
         :type w: rete.WME
         """
         for f in FIELDS:
@@ -75,18 +90,34 @@ class Has:
 
 
 class Neg(Has):
+    """
+    A negated pattern.
+
+    TODO:
+        - Does this need test implemented?
+    """
 
     def __repr__(self):
         return "-(%s %s %s)" % (self.identifier, self.attribute, self.value)
 
 
 class Rule(list):
+    """
+    Essentially an AND, a list of conditions.
+
+    TODO:
+        - Implement an OR equivelent, that gets compiled when added to a
+          network into multiple rules.
+    """
 
     def __init__(self, *args):
         self.extend(args)
 
 
 class Ncc(Rule):
+    """
+    Essentially a negated AND, a negated list of conditions.
+    """
 
     def __repr__(self):
         return "-%s" % super(Ncc, self).__repr__()
@@ -97,6 +128,14 @@ class Ncc(Rule):
 
 
 class Filter:
+    """
+    This is a test, it includes a code snippit that might include variables.
+    When employed in rete, it replaces the variables, then executes the code.
+    The code should evalute to a boolean result.
+
+    If it does not evaluate to True, then the test fails.
+    """
+
     def __init__(self, tmpl):
         self.tmpl = tmpl
 
@@ -105,16 +144,34 @@ class Filter:
 
 
 class Bind:
+    """
+    This node binds the result of a code evaluation to a variable, which can
+    then be used in subsequent patterns.
+
+    TODO:
+        - Could these use some form of partials to eliminate the need to do
+          find replace for variable? Maybe save an arglist of vars and a
+          partial that accepts bound values for the arg list. Could be faster.
+    """
+
     def __init__(self, tmp, to):
         self.tmpl = tmp
         self.to = to
 
     def __eq__(self, other):
         return isinstance(other, Bind) and \
-               self.tmpl == other.tmpl and self.to == other.to
+            self.tmpl == other.tmpl and self.to == other.to
 
 
 class WME:
+    """
+    This is essentially a fact, it has no variables in it. A working memory is
+    essentially comprised of a collection of these elements.
+
+    TODO:
+        - Change to prefix?
+        - Add tests to raise exception in the presence of variables.
+    """
 
     def __init__(self, identifier, attribute, value):
         self.identifier = identifier
@@ -139,6 +196,16 @@ class WME:
 
 
 class Token:
+    """
+    Not exactly sure what tokens represent. I think they might be pointers to
+    WME instantiated in alpha/beta memories, so they can be more easily
+    updated.
+
+    This enables some tracking of belief revision, tokens have a parent.
+
+    TODO:
+        - Why do tokens have a single parent?
+    """
 
     def __init__(self, parent, wme, node=None, binding=None):
         """
@@ -165,7 +232,7 @@ class Token:
 
     def __eq__(self, other):
         return isinstance(other, Token) and \
-               self.parent == other.parent and self.wme == other.wme
+            self.parent == other.parent and self.wme == other.wme
 
     def is_root(self):
         return not self.parent and not self.wme
@@ -180,6 +247,12 @@ class Token:
         return ret
 
     def get_binding(self, v):
+        """
+        Walks up the parents until it finds a binding for the variable.
+
+        TODO:
+            - Seems expensive, maybe possible to cache?
+        """
         t = self
         ret = t.binding.get(v)
         while not ret and t.parent:
@@ -199,6 +272,11 @@ class Token:
     @classmethod
     def delete_token_and_descendents(cls, token):
         """
+        Yup, don't understand this.
+
+        TODO:
+            - Understand this.
+
         :type token: Token
         """
         from rete.negative_node import NegativeNode
@@ -224,7 +302,3 @@ class Token:
             if not token.owner.ncc_results:
                 for child in token.node.ncc_node.children:
                     child.left_activation(token.owner, None)
-
-
-def is_var(v):
-    return v.startswith('$')

@@ -1,4 +1,14 @@
-from rete.common import BetaNode, Token
+from rete.common import Token
+
+
+class BetaNode(object):
+
+    def __init__(self, children=None, parent=None):
+        self.children = children if children else []
+        self.parent = parent
+
+    def dump(self):
+        return "%s %s" % (self.__class__.__name__, id(self))
 
 
 class BetaMemory(BetaNode):

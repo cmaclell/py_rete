@@ -2,6 +2,9 @@ from rete.common import FIELDS
 
 
 class ConstantTestNode:
+    """
+    This node tests that a particular field equals a particular constant.
+    """
 
     def __init__(self, field_to_test, field_must_equal=None, amem=None,
                  children=None):
@@ -24,6 +27,11 @@ class ConstantTestNode:
 
     def activation(self, wme):
         """
+        If the node is a valid test (not no-test), then check it against the
+        provided WME. If it passes and points to an alpha memory, then activate
+        the alpha memory with the wme. If it passes and points to additional
+        constant test nodes, then activate those with the wme too.
+
         :type wme: rete.WME
         """
         if self.field_to_test != 'no-test':
@@ -75,6 +83,14 @@ class AlphaMemory:
 
     def __init__(self, items=None, successors=None):
         """
+        Stores a set of WMEs (items). If activating an activated wme does not
+        exist, then it addes it. It also right activates all of its successors,
+        which correspond ot beta nodes.
+
+        TODO:
+            - replace self.items with a set rather than a list?
+            - why are beta nodes (successors) activated in reverse order?
+
         :type successors: list of BetaNode
         :type items: list of rete.WME
         """

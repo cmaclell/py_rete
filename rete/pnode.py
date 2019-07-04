@@ -1,4 +1,5 @@
-from rete.common import BetaNode, Token
+from rete.common import Token
+from rete.beta import BetaNode
 
 
 class PNode(BetaNode):

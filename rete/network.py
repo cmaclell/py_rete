@@ -7,8 +7,16 @@ from rete.negative_node import NegativeNode
 from rete.alpha import AlphaMemory, ConstantTestNode
 from rete.join_node import JoinNode, TestAtJoinNode
 from rete.pnode import PNode
-from rete.common import Token, BetaNode, FIELDS, Has, Neg, Rule, Ncc, is_var, Filter, Bind
-from rete.beta_memory_node import BetaMemory
+from rete.common import Token
+from rete.common import FIELDS
+from rete.common import Has
+from rete.common import Neg
+from rete.common import Ncc
+from rete.common import is_var
+from rete.common import Filter
+from rete.common import Bind
+from rete.beta import BetaNode
+from rete.beta import BetaMemory
 
 
 class Network:

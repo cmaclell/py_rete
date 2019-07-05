@@ -16,14 +16,14 @@ def is_var(v):
     return v.startswith('$')
 
 
-class ReteNode(object):
+class ReteNode:
     """
     Base BetaNode class, tracks parent and children.
     """
     items: Optional[List[Token]]
 
     def __init__(self, children: Optional[List[ReteNode]] = None, parent:
-                 Optional[ReteNode] = None):
+                 Optional[ReteNode] = None, **kwargs):
         self.children: List[ReteNode] = children if children else []
         self.parent = parent
 

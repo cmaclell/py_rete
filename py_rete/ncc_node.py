@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import List
-from typing import Tuple
 from typing import Optional
 
 from py_rete.common import Token
@@ -36,7 +35,8 @@ class NccNode(ReteNode):
 
     def __init__(self, children: Optional[List[ReteNode]] = None, parent:
                  Optional[ReteNode] = None,
-                 items: Optional[List[Token]] = None, partner: NccPartnerNode = None):
+                 items: Optional[List[Token]] = None, partner: NccPartnerNode =
+                 None):
         """
         :type partner: NccPartnerNode
         :type items: list of rete.Token

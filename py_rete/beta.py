@@ -18,7 +18,6 @@ class BetaMemory(ReteNode):
         """
         super(BetaMemory, self).__init__(children=children, parent=parent)
         self.items = items if items else []
-        self.children = children if children else []
 
     def left_activation(self, token, wme, binding=None):
         """

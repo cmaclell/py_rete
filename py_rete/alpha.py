@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from py_rete.common import AlphaMemory
+
+
 class ConstantTestNode:
     """
     This node tests that a particular field equals a particular constant.
@@ -75,33 +80,3 @@ class ConstantTestNode:
         new_node = ConstantTestNode(field, symbol, children=[])
         parent.children.append(new_node)
         return new_node
-
-
-class AlphaMemory:
-
-    def __init__(self, items=None, successors=None):
-        """
-        Stores a set of WMEs (items). If activating an activated wme does not
-        exist, then it addes it. It also right activates all of its successors,
-        which correspond ot beta nodes.
-
-        TODO:
-            - replace self.items with a set rather than a list?
-            - why are beta nodes (successors) activated in reverse order?
-
-        :type successors: list of BetaNode
-        :type items: list of rete.WME
-        """
-        self.items = items if items else []
-        self.successors = successors if successors else []
-
-    def activation(self, wme):
-        """
-        :type wme: rete.WME
-        """
-        if wme in self.items:
-            return
-        self.items.append(wme)
-        wme.amems.append(self)
-        for child in reversed(self.successors):
-            child.right_activation(wme)

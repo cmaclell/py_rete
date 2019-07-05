@@ -2,10 +2,12 @@
 
 from py_rete.bind_node import BindNode
 from py_rete.filter_node import FilterNode
-from py_rete.ncc_node import NccNode, NccPartnerNode
+from py_rete.ncc_node import NccPartnerNode
+from py_rete.ncc_node import NccNode
 from py_rete.negative_node import NegativeNode
-from py_rete.alpha import AlphaMemory, ConstantTestNode
-from py_rete.join_node import JoinNode, TestAtJoinNode
+from py_rete.alpha import ConstantTestNode
+from py_rete.join_node import TestAtJoinNode
+from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
 from py_rete.common import Token
 from py_rete.common import Has
@@ -15,6 +17,7 @@ from py_rete.common import is_var
 from py_rete.common import Filter
 from py_rete.common import Bind
 from py_rete.common import ReteNode
+from py_rete.common import AlphaMemory
 from py_rete.beta import BetaMemory
 
 

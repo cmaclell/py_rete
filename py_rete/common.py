@@ -9,11 +9,40 @@ from typing import List
 from typing import Tuple
 from typing import Optional
 
-from py_rete.alpha import AlphaMemory
-
 
 def is_var(v):
     return v.startswith('$')
+
+
+class AlphaMemory:
+
+    def __init__(self, items: Optional[List[WME]] = None, successors:
+                 Optional[List[ReteNode]] = None) -> None:
+        """
+        Stores a set of WMEs (items). If activating an activated wme does not
+        exist, then it addes it. It also right activates all of its successors,
+        which correspond ot beta nodes.
+
+        TODO:
+            - replace self.items with a set rather than a list?
+            - why are beta nodes (successors) activated in reverse order?
+
+        :type successors: list of BetaNode
+        :type items: list of rete.WME
+        """
+        self.items: List[WME] = items if items else []
+        self.successors: List[ReteNode] = successors if successors else []
+
+    def activation(self, wme: WME) -> None:
+        """
+        :type wme: rete.WME
+        """
+        if wme in self.items:
+            return
+        self.items.append(wme)
+        wme.amems.append(self)
+        for child in reversed(self.successors):
+            child.right_activation(wme)
 
 
 class ReteNode:
@@ -32,6 +61,9 @@ class ReteNode:
 
     def left_activation(self, token: Optional[Token], wme: Optional[WME],
                         binding: Optional[dict] = None):
+        raise NotImplementedError
+
+    def right_activation(self, wme: WME):
         raise NotImplementedError
 
 

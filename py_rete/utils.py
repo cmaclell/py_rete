@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
-from py_rete.common import Rule
-from py_rete.common import Has
-from py_rete.common import Neg
-from py_rete.common import Filter
-from py_rete.common import Bind
-from py_rete.common import Ncc
+from py_rete.production import AndCond
+from py_rete.production import Cond
+from py_rete.production import Neg
+from py_rete.production import Filter
+from py_rete.production import Bind
+from py_rete.production import Ncc
 
 
 def parse_json(s):
@@ -19,7 +19,7 @@ def parse_xml(s):
     root = ET.fromstring(s)
     result = []
     for production in root:
-        lhs = Rule()
+        lhs = AndCond()
         lhs.extend(parsing(production[0]))
         rhs = production[1].attrib
         result.append((lhs, rhs))
@@ -30,7 +30,7 @@ def parsing(root):
     out = []
     for cond in root:
         if cond.tag == 'has':
-            out.append(Has(**cond.attrib))
+            out.append(Cond(**cond.attrib))
         elif cond.tag == 'neg':
             out.append(Neg(**cond.attrib))
         elif cond.tag == 'filter':

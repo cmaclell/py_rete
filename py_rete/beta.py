@@ -1,3 +1,7 @@
+from __future__ import annotations
+from typing import Optional
+from typing import List
+
 from py_rete.common import Token
 from py_rete.common import ReteNode
 
@@ -7,7 +11,9 @@ class BetaMemory(ReteNode):
     A memory to store tokens in the beta network."
     """
 
-    def __init__(self, children=None, parent=None, items=None):
+    def __init__(self, children: Optional[List[ReteNode]] = None,
+                 parent: Optional[ReteNode] = None,
+                 items: Optional[List[Token]] = None):
         """
         Similar to alpha memory, items is a set of tokens
 
@@ -17,7 +23,8 @@ class BetaMemory(ReteNode):
         :type items: list of Token
         """
         super(BetaMemory, self).__init__(children=children, parent=parent)
-        self.items = items if items else []
+        self.items: List[Token] = items if items else []
+        self.all_children: List[ReteNode] = []
 
     def left_activation(self, token, wme, binding=None):
         """

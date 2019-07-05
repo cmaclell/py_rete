@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
-
-from py_rete.common import Rule, Has, Neg, WME, Token, Ncc
+from py_rete.production import Production
+from py_rete.production import AndCond
+from py_rete.production import Cond
+from py_rete.production import Neg
+from py_rete.production import Ncc
+from py_rete.common import WME
+from py_rete.common import Token
 from py_rete.network import Network
-from py_rete.pnode import PNode
 
 
 def test_network_case0():
     net = Network()
-    c0 = Has('x', 'id', '1')
-    c1 = Has('x', 'kind', '8')
-    p0 = net.add_production(Rule(c0, c1))
+    c0 = Cond('x', 'id', '1')
+    c1 = Cond('x', 'kind', '8')
+    p0 = net.add_production(Production(AndCond(c0, c1)))
 
     w0 = WME('x', 'id', '1')
     w1 = WME('x', 'kind', '8')
@@ -29,10 +33,10 @@ def test_network_case0():
 def test_network_case1():
     # setup
     net = Network()
-    c0 = Has('$x', 'on', '$y')
-    c1 = Has('$y', 'left-of', '$z')
-    c2 = Has('$z', 'color', 'red')
-    net.add_production(Rule(c0, c1, c2))
+    c0 = Cond('$x', 'on', '$y')
+    c1 = Cond('$y', 'left-of', '$z')
+    c2 = Cond('$z', 'color', 'red')
+    net.add_production(Production(AndCond(c0, c1, c2)))
     # end
 
     am0 = net.build_or_share_alpha_memory(c0)
@@ -81,10 +85,10 @@ def test_network_case1():
 def test_dup():
     # setup
     net = Network()
-    c0 = Has('$x', 'self', '$y')
-    c1 = Has('$x', 'color', 'red')
-    c2 = Has('$y', 'color', 'red')
-    net.add_production(Rule(c0, c1, c2))
+    c0 = Cond('$x', 'self', '$y')
+    c1 = Cond('$x', 'color', 'red')
+    c2 = Cond('$y', 'color', 'red')
+    net.add_production(Production(AndCond(c0, c1, c2)))
 
     wmes = [
         WME('B1', 'self', 'B1'),
@@ -104,10 +108,10 @@ def test_dup():
 def test_negative_condition():
     # setup
     net = Network()
-    c0 = Has('$x', 'on', '$y')
-    c1 = Has('$y', 'left-of', '$z')
+    c0 = Cond('$x', 'on', '$y')
+    c1 = Cond('$y', 'left-of', '$z')
     c2 = Neg('$z', 'color', 'red')
-    p0 = net.add_production(Rule(c0, c1, c2))
+    p0 = net.add_production(Production(AndCond(c0, c1, c2)))
     # end
 
     wmes = [
@@ -132,14 +136,14 @@ def test_negative_condition():
 
 def test_multi_productions():
     net = Network()
-    c0 = Has('$x', 'on', '$y')
-    c1 = Has('$y', 'left-of', '$z')
-    c2 = Has('$z', 'color', 'red')
-    c3 = Has('$z', 'on', 'table')
-    c4 = Has('$z', 'left-of', 'B4')
+    c0 = Cond('$x', 'on', '$y')
+    c1 = Cond('$y', 'left-of', '$z')
+    c2 = Cond('$z', 'color', 'red')
+    c3 = Cond('$z', 'on', 'table')
+    c4 = Cond('$z', 'left-of', 'B4')
 
-    p0 = net.add_production(Rule(c0, c1, c2))
-    p1 = net.add_production(Rule(c0, c1, c3, c4))
+    p0 = net.add_production(Production(AndCond(c0, c1, c2)))
+    p1 = net.add_production(Production(AndCond(c0, c1, c3, c4)))
 
     wmes = [
         WME('B1', 'on', 'B2'),
@@ -156,7 +160,7 @@ def test_multi_productions():
         net.add_wme(wme)
 
     # add product on the fly
-    p2 = net.add_production(Rule(c0, c1, c3, c2))
+    p2 = net.add_production(Production(AndCond(c0, c1, c3, c2)))
 
     assert len(p0.items) == 1
     assert len(p1.items) == 1
@@ -171,12 +175,12 @@ def test_multi_productions():
 
 def test_ncc():
     net = Network()
-    c0 = Has('$x', 'on', '$y')
-    c1 = Has('$y', 'left-of', '$z')
-    c2 = Has('$z', 'color', 'red')
-    c3 = Has('$z', 'on', '$w')
+    c0 = Cond('$x', 'on', '$y')
+    c1 = Cond('$y', 'left-of', '$z')
+    c2 = Cond('$z', 'color', 'red')
+    c3 = Cond('$z', 'on', '$w')
 
-    p0 = net.add_production(Rule(c0, c1, Ncc(c2, c3)))
+    p0 = net.add_production(Production(AndCond(c0, c1, Ncc(c2, c3))))
     wmes = [
         WME('B1', 'on', 'B2'),
         WME('B1', 'on', 'B3'),
@@ -196,8 +200,8 @@ def test_ncc():
 
 def test_black_white():
     net = Network()
-    c1 = Has('$item', 'cat', '$cid')
-    c2 = Has('$item', 'shop', '$sid')
+    c1 = Cond('$item', 'cat', '$cid')
+    c2 = Cond('$item', 'shop', '$sid')
     white = Ncc(
         Neg('$item', 'cat', '100'),
         Neg('$item', 'cat', '101'),
@@ -206,7 +210,7 @@ def test_black_white():
     n1 = Neg('$item', 'shop', '1')
     n2 = Neg('$item', 'shop', '2')
     n3 = Neg('$item', 'shop', '3')
-    p0 = net.add_production(Rule(c1, c2, white, n1, n2, n3))
+    p0 = net.add_production(Production(AndCond(c1, c2, white, n1, n2, n3)))
     wmes = [
         WME('item:1', 'cat', '101'),
         WME('item:1', 'shop', '4'),

@@ -1,9 +1,9 @@
 from py_rete.utils import parse_xml
-from py_rete.common import Rule
-from py_rete.common import Has
-from py_rete.common import Ncc
-from py_rete.common import Filter
-from py_rete.common import Bind
+from py_rete.production import AndCond
+from py_rete.production import Cond
+from py_rete.production import Ncc
+from py_rete.production import Filter
+from py_rete.production import Bind
 
 
 def test_xml():
@@ -23,9 +23,9 @@ def test_xml():
         </production>
     </data>"""
     result = parse_xml(s)
-    assert result[0][0] == Rule(
-        Has('$x', 'on', '$y'),
+    assert result[0][0] == AndCond(
+        Cond('$x', 'on', '$y'),
         Bind('1+1', '$test'),
         Filter('$y != "table"'),
-        Ncc(Has('$z', 'color', 'red'),
-            Has('$z', 'on', '$w')))
+        Ncc(Cond('$z', 'color', 'red'),
+            Cond('$z', 'on', '$w')))

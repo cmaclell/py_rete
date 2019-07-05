@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+from typing import Generator
+from typing import Dict
+from typing import Tuple
+from typing import List
+from typing import Set
+from itertools import product
 
 from py_rete.bind_node import BindNode
 from py_rete.filter_node import FilterNode
@@ -9,16 +15,19 @@ from py_rete.alpha import ConstantTestNode
 from py_rete.join_node import TestAtJoinNode
 from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
+from py_rete.common import WME
 from py_rete.common import Token
-from py_rete.common import Has
-from py_rete.common import Neg
-from py_rete.common import Ncc
-from py_rete.common import is_var
-from py_rete.common import Filter
-from py_rete.common import Bind
 from py_rete.common import ReteNode
 from py_rete.common import AlphaMemory
 from py_rete.beta import BetaMemory
+from py_rete.production import Cond
+from py_rete.production import Ncc
+from py_rete.production import is_var
+from py_rete.production import Neg
+from py_rete.production import Filter
+from py_rete.production import Bind
+from py_rete.production import Production
+from py_rete.production import Activation
 
 
 class Network:
@@ -37,11 +46,23 @@ class Network:
     """
 
     def __init__(self):
-        self.alpha_root = ConstantTestNode('no-test', amem=AlphaMemory())
+        self.alpha_hash: Dict[Tuple[str, str, str], AlphaMemory] = {}
         self.beta_root = ReteNode()
         self.buf = None
+        self.pnodes: List[PNode] = []
+        self.working_memory: Set[WME] = set([])
 
-    def add_production(self, lhs, **kwargs):
+    @property
+    def activations(self) -> Generator[Activation, None, None]:
+        for pnode in self.pnodes:
+            for t in pnode.items:
+                yield Activation(pnode.production, t)
+
+    @property
+    def wmes(self) -> Set[WME]:
+        return self.working_memory
+
+    def add_production(self, prod: Production, **kwargs):
         """
         TODO:
             - what does this return? A pnode?
@@ -50,8 +71,10 @@ class Network:
         :type lhs: Rule
         """
         current_node = self.build_or_share_network_for_conditions(
-            self.beta_root, lhs, [])
-        return self.build_or_share_p(current_node, **kwargs)
+            self.beta_root, prod.lhs, [])
+        p_node = self.build_or_share_p(current_node, prod)
+        self.pnodes.append(p_node)
+        return p_node
 
     def remove_production(self, node):
         """
@@ -60,11 +83,25 @@ class Network:
         """
         self.delete_node_and_any_unused_ancestors(node)
 
-    def add_wme(self, wme):
-        """
-        Adds a wme to the memory.
-        """
-        self.alpha_root.activation(wme)
+    def add_wme(self, wme) -> None:
+        keys = product([wme.identifier, '*'],
+                       [wme.attribute, '*'],
+                       [wme.value, '*'])
+
+        if wme in self.working_memory:
+            return
+
+        for key in keys:
+            if key in self.alpha_hash:
+                self.alpha_hash[key].activation(wme)
+
+        self.working_memory.add(wme)
+
+    # def add_wme(self, wme):
+    #     """
+    #     Adds a wme to the memory.
+    #     """
+    #     self.alpha_root.activation(wme)
 
     @classmethod
     def remove_wme(cls, wme):
@@ -131,23 +168,52 @@ class Network:
 
     def build_or_share_alpha_memory(self, condition):
         """
-        TODO:
-            - Implement exhaustive hash-table-lookup (pg. 36).
-
         :type condition: Condition
         :rtype: AlphaMemory
         """
-        path = []
-        for f in ['identifier', 'attribute', 'value']:
-            v = getattr(condition, f)
-            if not is_var(v):
-                path.append((f, v))
-        am = ConstantTestNode.build_or_share_alpha_memory(
-            self.alpha_root, path)
-        for w in self.alpha_root.amem.items:
+        id_test = '*'
+        attr_test = '*'
+        value_test = '*'
+
+        if not is_var(condition.identifier):
+            id_test = condition.identifier
+        if not is_var(condition.attribute):
+            attr_test = condition.attribute
+        if not is_var(condition.value):
+            value_test = condition.value
+
+        key = (id_test, attr_test, value_test)
+
+        if key in self.alpha_hash:
+            return self.alpha_hash[key]
+
+        self.alpha_hash[key] = AlphaMemory()
+
+        for w in self.working_memory:
             if condition.test(w):
-                am.activation(w)
-        return am
+                self.alpha_hash[key].activation(w)
+
+        return self.alpha_hash[key]
+
+    # def build_or_share_alpha_memory(self, condition):
+    #     """
+    #     TODO:
+    #         - Implement exhaustive hash-table-lookup (pg. 36).
+
+    #     :type condition: Condition
+    #     :rtype: AlphaMemory
+    #     """
+    #     path = []
+    #     for f in ['identifier', 'attribute', 'value']:
+    #         v = getattr(condition, f)
+    #         if not is_var(v):
+    #             path.append((f, v))
+    #     am = ConstantTestNode.build_or_share_alpha_memory(
+    #         self.alpha_root, path)
+    #     for w in self.alpha_root.amem.items:
+    #         if condition.test(w):
+    #             am.activation(w)
+    #     return am
 
     @classmethod
     def get_join_tests_from_condition(cls, c, earlier_conds):
@@ -156,7 +222,7 @@ class Network:
             - we iterate through the earlier conditions, this can be terminated
               once we find something, we don't need to keep iterating.
 
-        :type c: Has
+        :type c: Cond
         :type earlier_conds: Rule
         :rtype: list of TestAtJoinNode
         """
@@ -179,7 +245,7 @@ class Network:
             - Why does this have a `has` arg? This is not in doorenbois
               implementation?
 
-        :type has: Has
+        :type has: Cond
         :type parent: BetaNode
         :type amem: AlphaMemory
         :type tests: list of TestAtJoinNode
@@ -227,7 +293,7 @@ class Network:
         self.update_new_node_with_matches_from_above(node)
         return node
 
-    def build_or_share_p(self, parent, **kwargs):
+    def build_or_share_p(self, parent, prod):
         """
         :type kwargs:
         :type parent: BetaNode
@@ -236,7 +302,7 @@ class Network:
         for child in parent.children:
             if isinstance(child, PNode):
                 return child
-        node = PNode(None, parent, **kwargs)
+        node = PNode(prod, None, parent)
         parent.children.append(node)
         self.update_new_node_with_matches_from_above(node)
         return node
@@ -305,7 +371,7 @@ class Network:
                 am = self.build_or_share_alpha_memory(cond)
                 current_node = self.build_or_share_negative_node(current_node,
                                                                  am, tests)
-            elif isinstance(cond, Has):
+            elif isinstance(cond, Cond):
                 current_node = self.build_or_share_beta_memory(current_node)
                 tests = self.get_join_tests_from_condition(cond,
                                                            conds_higher_up)

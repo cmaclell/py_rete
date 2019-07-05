@@ -1,30 +1,11 @@
 from py_rete.common import Token
+from py_rete.common import ReteNode
 
 
-class BetaNode(object):
-    """
-    Base BetaNode class, tracks parent and children.
-
-    TODO:
-        - Does this base class need a "kind"
-        - What purpose does the "kind" variable have? Maybe it can be removed?
-          Use object class instead.
-    """
-
-    def __init__(self, children=None, parent=None):
-        self.children = children if children else []
-        self.parent = parent
-
-    def dump(self):
-        return "%s %s" % (self.__class__.__name__, id(self))
-
-
-class BetaMemory(BetaNode):
+class BetaMemory(ReteNode):
     """
     A memory to store tokens in the beta network."
     """
-
-    kind = 'beta-memory'
 
     def __init__(self, children=None, parent=None, items=None):
         """

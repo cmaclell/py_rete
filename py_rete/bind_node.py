@@ -1,8 +1,8 @@
 import copy
-from py_rete.beta import BetaNode
+from py_rete.common import ReteNode
 
 
-class BindNode(BetaNode):
+class BindNode(ReteNode):
     """
     A beta network class. This class stores a code snipit, with variables in
     it. It gets all the bindings from the incoming token, updates them with the

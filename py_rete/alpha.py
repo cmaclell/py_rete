@@ -1,6 +1,3 @@
-from py_rete.common import FIELDS
-
-
 class ConstantTestNode:
     """
     This node tests that a particular field equals a particular constant.
@@ -58,7 +55,8 @@ class ConstantTestNode:
                 node.amem = am
                 return am
         f, v = path.pop(0)
-        assert f in FIELDS, "`%s` not in %s" % (f, FIELDS)
+        fields = ['identifier', 'attribute', 'value']
+        assert f in fields, "`%s` not in %s" % (f, fields)
         next_node = cls.build_or_share_constant_test_node(node, f, v)
         return cls.build_or_share_alpha_memory(next_node, path)
 

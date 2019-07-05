@@ -28,10 +28,14 @@ def add_wmes():
     for wme in wmes:
         net.add_wme(wme)
 
+    return net
+
 
 def test_init_network(benchmark):
     benchmark(init_network)
 
 
 def test_add_wmes(benchmark):
-    benchmark(add_wmes)
+    net = benchmark(add_wmes)
+
+    print(net)

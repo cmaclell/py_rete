@@ -8,14 +8,13 @@ from py_rete.alpha import AlphaMemory, ConstantTestNode
 from py_rete.join_node import JoinNode, TestAtJoinNode
 from py_rete.pnode import PNode
 from py_rete.common import Token
-from py_rete.common import FIELDS
 from py_rete.common import Has
 from py_rete.common import Neg
 from py_rete.common import Ncc
 from py_rete.common import is_var
 from py_rete.common import Filter
 from py_rete.common import Bind
-from py_rete.beta import BetaNode
+from py_rete.common import ReteNode
 from py_rete.beta import BetaMemory
 
 
@@ -36,7 +35,7 @@ class Network:
 
     def __init__(self):
         self.alpha_root = ConstantTestNode('no-test', amem=AlphaMemory())
-        self.beta_root = BetaNode()
+        self.beta_root = ReteNode()
         self.buf = None
 
     def add_production(self, lhs, **kwargs):
@@ -73,7 +72,7 @@ class Network:
             am.items.remove(wme)
         for t in wme.tokens:
             Token.delete_token_and_descendents(t)
-        for jr in wme.negative_join_result:
+        for jr in wme.negative_join_results:
             jr.owner.join_results.remove(jr)
             if not jr.owner.join_results:
                 for child in jr.owner.node.children:
@@ -129,11 +128,14 @@ class Network:
 
     def build_or_share_alpha_memory(self, condition):
         """
+        TODO:
+            - Implement exhaustive hash-table-lookup (pg. 36).
+
         :type condition: Condition
         :rtype: AlphaMemory
         """
         path = []
-        for f in FIELDS:
+        for f in ['identifier', 'attribute', 'value']:
             v = getattr(condition, f)
             if not is_var(v):
                 path.append((f, v))
@@ -147,6 +149,10 @@ class Network:
     @classmethod
     def get_join_tests_from_condition(cls, c, earlier_conds):
         """
+        TODO:
+            - we iterate through the earlier conditions, this can be terminated
+              once we find something, we don't need to keep iterating.
+
         :type c: Has
         :type earlier_conds: Rule
         :rtype: list of TestAtJoinNode
@@ -177,8 +183,8 @@ class Network:
         :rtype: JoinNode
         """
         for child in parent.children:
-            if isinstance(child, JoinNode) and child.amem == amem \
-                    and child.tests == tests and child.has == has:
+            if (isinstance(child, JoinNode) and child.amem == amem and
+                    child.tests == tests and child.has == has):
                 return child
         node = JoinNode([], parent, amem, tests, has)
         parent.children.append(node)
@@ -210,11 +216,11 @@ class Network:
         for child in parent.children:
             if isinstance(child, BetaMemory):
                 return child
-        node = BetaMemory(None, parent)
+        node = BetaMemory(parent=parent)
+        parent.children.append(node)
         # dummy top beta memory
         if parent == self.beta_root:
             node.items.append(Token(None, None))
-        parent.children.append(node)
         self.update_new_node_with_matches_from_above(node)
         return node
 

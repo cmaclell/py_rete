@@ -1,7 +1,7 @@
-from py_rete.beta import BetaNode
+from py_rete.common import ReteNode
 
 
-class JoinNode(BetaNode):
+class JoinNode(ReteNode):
     """
     A beta network class. Does the heavly lifting of joining two beta network
     paths.
@@ -40,8 +40,6 @@ class JoinNode(BetaNode):
             - Currently only supports equality, maybe add support for other
               tests?
     """
-
-    kind = 'join-node'
 
     def __init__(self, children, parent, amem, tests, has):
         """

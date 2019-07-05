@@ -1,8 +1,13 @@
+from __future__ import annotations
+from typing import List
+from typing import Tuple
+from typing import Optional
+
 from py_rete.common import Token
-from py_rete.beta import BetaNode
+from py_rete.beta import ReteNode
 
 
-class NccNode(BetaNode):
+class NccNode(ReteNode):
     """
     A beta network class for negated conjunctive conditions (ncc).
 
@@ -29,7 +34,9 @@ class NccNode(BetaNode):
           (which also iterates)?
     """
 
-    def __init__(self, children=None, parent=None, items=None, partner=None):
+    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
+                 Optional[ReteNode] = None,
+                 items: Optional[List[Token]] = None, partner: NccPartnerNode = None):
         """
         :type partner: NccPartnerNode
         :type items: list of rete.Token
@@ -55,7 +62,7 @@ class NccNode(BetaNode):
                 child.left_activation(new_token, None)
 
 
-class NccPartnerNode(BetaNode):
+class NccPartnerNode(ReteNode):
     """
     The partner node for negated conjunctive conditions node.
 
@@ -70,8 +77,10 @@ class NccPartnerNode(BetaNode):
           to distinguish/verify.
     """
 
-    def __init__(self, children=None, parent=None, ncc_node=None,
-                 number_of_conditions=0, new_result_buffer=None):
+    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
+                 Optional[ReteNode] = None, ncc_node: Optional[NccNode] = None,
+                 number_of_conditions: int = 0, new_result_buffer:
+                 Optional[List[Token]] = None):
         """
         :type new_result_buffer: list of rete.Token
         :type ncc_node: NccNode

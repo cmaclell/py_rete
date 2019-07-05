@@ -1,23 +1,9 @@
 from py_rete.common import Token
-from py_rete.beta import BetaNode
+from py_rete.common import NegativeJoinResult
+from py_rete.common import ReteNode
 
 
-class NegativeJoinResult:
-    """
-    A new class to store the result of a negative join. Similar to a token, it
-    is owned by a token.
-    """
-
-    def __init__(self, owner, wme):
-        """
-        :type wme: rete.WME
-        :type owner: rete.Token
-        """
-        self.owner = owner
-        self.wme = wme
-
-
-class NegativeNode(BetaNode):
+class NegativeNode(ReteNode):
     """
     A beta network class that only passes on tokens when there is no match.
 
@@ -57,7 +43,7 @@ class NegativeNode(BetaNode):
             if self.perform_join_test(new_token, item):
                 jr = NegativeJoinResult(new_token, item)
                 new_token.join_results.append(jr)
-                item.negative_join_result.append(jr)
+                item.negative_join_results.append(jr)
         if not new_token.join_results:
             for child in self.children:
                 child.left_activation(new_token, None)
@@ -76,7 +62,7 @@ class NegativeNode(BetaNode):
                     # Token.delete_token_and_descendents(t)
                 jr = NegativeJoinResult(t, wme)
                 t.join_results.append(jr)
-                wme.negative_join_result.append(jr)
+                wme.negative_join_results.append(jr)
 
     def perform_join_test(self, token, wme):
         """

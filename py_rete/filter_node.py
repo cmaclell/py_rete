@@ -1,7 +1,7 @@
-from py_rete.beta import BetaNode
+from py_rete.beta import ReteNode
 
 
-class FilterNode(BetaNode):
+class FilterNode(ReteNode):
     """
     A beta network class. Takes a code snipit, replaces variables with bound
     values, executes it. If the code evaluates to True (boolean), then it
@@ -10,8 +10,6 @@ class FilterNode(BetaNode):
     TODO:
         - explore use of functions/partials instead of string code snipits
     """
-
-    kind = 'filter-node'
 
     def __init__(self, children, parent, tmpl):
         """

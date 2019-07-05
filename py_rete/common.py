@@ -2,12 +2,77 @@
 """
     TODO:
         - Why is fields at the top? is it mutable?
+            - seems to be used in other functions to get the field names
 """
-FIELDS = ['identifier', 'attribute', 'value']
+from __future__ import annotations
+from typing import List
+from typing import Tuple
+from typing import Optional
+
+from py_rete.alpha import AlphaMemory
 
 
 def is_var(v):
     return v.startswith('$')
+
+
+class ReteNode(object):
+    """
+    Base BetaNode class, tracks parent and children.
+    """
+    items: Optional[List[Token]]
+
+    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
+                 Optional[ReteNode] = None):
+        self.children: List[ReteNode] = children if children else []
+        self.parent = parent
+
+    def dump(self):
+        return "%s %s" % (self.__class__.__name__, id(self))
+
+    def left_activation(self, token: Optional[Token], wme: Optional[WME],
+                        binding: Optional[dict] = None):
+        raise NotImplementedError
+
+
+class WME:
+    """
+    This is essentially a fact, it has no variables in it. A working memory is
+    essentially comprised of a collection of these elements.
+
+    TODO:
+        - Change to prefix?
+        - Add tests to raise exception in the presence of variables.
+    """
+
+    def __init__(self, identifier: str, attribute: str, value: str) -> None:
+        """
+        identifier, attribute, and value are all strings, if they start with a
+        $ then they are a variable.
+
+        :type identifier: str
+        :type attribute: str
+        :type value: str
+        """
+        self.identifier = identifier
+        self.attribute = attribute
+        self.value = value
+        self.amems: List[AlphaMemory] = []  # the ones containing this WME
+        self.tokens: List[Token] = []  # the ones containing this WME
+        self.negative_join_results: List[NegativeJoinResult] = []
+
+    def __repr__(self):
+        return "(%s ^%s %s)" % (self.identifier, self.attribute, self.value)
+
+    def __eq__(self, other: object) -> bool:
+        """
+        :type other: WME
+        """
+        if not isinstance(other, WME):
+            return False
+        return self.identifier == other.identifier and \
+            self.attribute == other.attribute and \
+            self.value == other.value
 
 
 class Has:
@@ -19,7 +84,8 @@ class Has:
         - Change order to be prefix? idk.
     """
 
-    def __init__(self, identifier=None, attribute=None, value=None):
+    def __init__(self, identifier: Optional[str] = None, attribute:
+                 Optional[str] = None, value: Optional[str] = None) -> None:
         """
         Constructor.
 
@@ -41,30 +107,32 @@ class Has:
     def __repr__(self):
         return "(%s %s %s)" % (self.identifier, self.attribute, self.value)
 
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-            and self.identifier == other.identifier \
-            and self.attribute == other.attribute \
-            and self.value == other.value
+    def __eq__(self, other: object):
+        if not isinstance(other, Has):
+            return False
+        return (self.__class__ == other.__class__
+                and self.identifier == other.identifier
+                and self.attribute == other.attribute
+                and self.value == other.value)
 
     @property
-    def vars(self):
+    def vars(self) -> List[Tuple[str, str]]:
         """
         Returns a list of variables with the labels for the slots they occupy.
 
         :rtype: list
         """
         ret = []
-        for field in FIELDS:
+        for field in ['identifier', 'attribute', 'value']:
             v = getattr(self, field)
             if is_var(v):
                 ret.append((field, v))
         return ret
 
-    def contain(self, v):
+    def contain(self, v: str) -> str:
         """
-        Checks if a variable is in a pattern. Returns True if it is, otherwise
-        it returns an empty string.
+        Checks if a variable is in a pattern. Returns field if it is, otherwise
+        an empty string.
 
         TODO:
             - Why does this return an empty string on failure?
@@ -72,19 +140,21 @@ class Has:
         :type v: Var
         :rtype: bool
         """
-        for f in FIELDS:
+        assert is_var(v)
+
+        for f in ['identifier', 'attribute', 'value']:
             _v = getattr(self, f)
             if _v == v:
                 return f
         return ""
 
-    def test(self, w):
+    def test(self, w: WME) -> bool:
         """
         Checks if a pattern matches a working memory element.
 
         :type w: rete.WME
         """
-        for f in FIELDS:
+        for f in ['identifier', 'attribute', 'value']:
             v = getattr(self, f)
             if is_var(v):
                 continue
@@ -116,7 +186,7 @@ class Rule(list):
           Might need an actual rule or production class.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args: List[Has]) -> None:
         self.extend(args)
 
 
@@ -129,7 +199,7 @@ class Ncc(Rule):
         return "-%s" % super(Ncc, self).__repr__()
 
     @property
-    def number_of_conditions(self):
+    def number_of_conditions(self) -> int:
         return len(self)
 
 
@@ -142,10 +212,10 @@ class Filter:
     If it does not evaluate to True, then the test fails.
     """
 
-    def __init__(self, tmpl):
+    def __init__(self, tmpl: str) -> None:
         self.tmpl = tmpl
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, Filter) and self.tmpl == other.tmpl
 
 
@@ -160,45 +230,14 @@ class Bind:
           partial that accepts bound values for the arg list. Could be faster.
     """
 
-    def __init__(self, tmp, to):
+    def __init__(self, tmp: str, to: str):
         self.tmpl = tmp
         self.to = to
+        assert is_var(self.to)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, Bind) and \
             self.tmpl == other.tmpl and self.to == other.to
-
-
-class WME:
-    """
-    This is essentially a fact, it has no variables in it. A working memory is
-    essentially comprised of a collection of these elements.
-
-    TODO:
-        - Change to prefix?
-        - Add tests to raise exception in the presence of variables.
-    """
-
-    def __init__(self, identifier, attribute, value):
-        self.identifier = identifier
-        self.attribute = attribute
-        self.value = value
-        self.amems = []  # the ones containing this WME
-        self.tokens = []  # the ones containing this WME
-        self.negative_join_result = []
-
-    def __repr__(self):
-        return "(%s ^%s %s)" % (self.identifier, self.attribute, self.value)
-
-    def __eq__(self, other):
-        """
-        :type other: WME
-        """
-        if not isinstance(other, WME):
-            return False
-        return self.identifier == other.identifier and \
-            self.attribute == other.attribute and \
-            self.value == other.value
 
 
 class Token:
@@ -207,7 +246,9 @@ class Token:
     corresponds to the match that was extended to create the current token.
     """
 
-    def __init__(self, parent, wme, node=None, binding=None):
+    def __init__(self, parent: Optional[Token], wme: Optional[WME], node:
+                 Optional[ReteNode] = None,
+                 binding: Optional[dict] = None) -> None:
         """
         :type wme: WME
         :type parent: Token
@@ -215,11 +256,15 @@ class Token:
         """
         self.parent = parent
         self.wme = wme
-        self.node = node  # points to memory this token is in
-        self.children = []  # the ones with parent = this token
-        self.join_results = []  # used only on tokens in negative nodes
-        self.ncc_results = []
-        self.owner = None  # Ncc
+        # points to memory this token is in
+        self.node = node
+        # the ones with parent = this token
+        self.children: List[Token] = []
+        # used only on tokens in negative nodes
+        self.join_results: List[NegativeJoinResult] = []
+        self.ncc_results: List[Token] = []
+        # Ncc
+        self.owner: Optional[Token] = None
         self.binding = binding if binding else {}  # {"$x": "B1"}
 
         if self.wme:
@@ -227,32 +272,33 @@ class Token:
         if self.parent:
             self.parent.children.append(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Token %s>" % self.wmes
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, Token) and \
             self.parent == other.parent and self.wme == other.wme
 
-    def is_root(self):
+    def is_root(self) -> bool:
         return not self.parent and not self.wme
 
     @property
-    def wmes(self):
+    def wmes(self) -> List[Optional[WME]]:
         ret = [self.wme]
         t = self
-        while not t.parent.is_root():
+        while t.parent and not t.parent.is_root():
             t = t.parent
             ret.insert(0, t.wme)
         return ret
 
-    def get_binding(self, v):
+    def get_binding(self, v: str) -> Optional[str]:
         """
         Walks up the parents until it finds a binding for the variable.
 
         TODO:
             - Seems expensive, maybe possible to cache?
         """
+        assert is_var(v)
         t = self
         ret = t.binding.get(v)
         while not ret and t.parent:
@@ -260,7 +306,7 @@ class Token:
             ret = t.binding.get(v)
         return ret
 
-    def all_binding(self):
+    def all_binding(self) -> dict:
         path = [self]
         if path[0].parent:
             path.insert(0, path[0].parent)
@@ -269,16 +315,14 @@ class Token:
             binding.update(t.binding)
         return binding
 
-    @classmethod
-    def delete_descendents_of_token(cls, token):
+    def delete_descendents_of_token(self) -> None:
         """
         Helper function to delete all the descendent tokens.
         """
-        for t in token.children:
-            Token.delete_token_and_descendents(t)
+        for t in self.children:
+            t.delete_token_and_descendents()
 
-    @classmethod
-    def delete_token_and_descendents(cls, token):
+    def delete_token_and_descendents(self) -> None:
         """
         Deletes a token and its descendents, but has special cases that make
         this difficult to understand in isolation.
@@ -289,26 +333,46 @@ class Token:
 
         :type token: Token
         """
+        from py_rete.ncc_node import NccNode
+        from py_rete.ncc_node import NccPartnerNode
         from py_rete.negative_node import NegativeNode
-        from py_rete.ncc_node import NccPartnerNode, NccNode
 
-        for child in token.children:
-            cls.delete_token_and_descendents(child)
-        if not isinstance(token.node, NccPartnerNode):
-            token.node.items.remove(token)
-        if token.wme:
-            token.wme.tokens.remove(token)
-        if token.parent:
-            token.parent.children.remove(token)
-        if isinstance(token.node, NegativeNode):
-            for jr in token.join_results:
+        for child in self.children:
+            child.delete_token_and_descendents()
+        if (self.node and self.node.items and not
+                isinstance(self.node, NccPartnerNode)):
+            self.node.items.remove(self)
+        if self.wme:
+            self.wme.tokens.remove(self)
+        if self.parent:
+            self.parent.children.remove(self)
+        if isinstance(self.node, NegativeNode):
+            for jr in self.join_results:
                 jr.wme.negative_join_results.remove(jr)
-        elif isinstance(token.node, NccNode):
-            for result_tok in token.ncc_results:
-                result_tok.wme.tokens.remove(result_tok)
-                result_tok.parent.children.remove(result_tok)
-        elif isinstance(token.node, NccPartnerNode):
-            token.owner.ncc_results.remove(token)
-            if not token.owner.ncc_results:
-                for child in token.node.ncc_node.children:
-                    child.left_activation(token.owner, None)
+        elif isinstance(self.node, NccNode):
+            for result_tok in self.ncc_results:
+                if result_tok.wme:
+                    result_tok.wme.tokens.remove(result_tok)
+                if result_tok.parent:
+                    result_tok.parent.children.remove(result_tok)
+        elif isinstance(self.node, NccPartnerNode):
+            if self.owner:
+                self.owner.ncc_results.remove(self)
+                if not self.owner.ncc_results and self.node.ncc_node:
+                    for bchild in self.node.ncc_node.children:
+                        bchild.left_activation(self.owner, None)
+
+
+class NegativeJoinResult:
+    """
+    A new class to store the result of a negative join. Similar to a token, it
+    is owned by a token.
+    """
+
+    def __init__(self, owner: Token, wme: WME):
+        """
+        :type wme: rete.WME
+        :type owner: rete.Token
+        """
+        self.owner = owner
+        self.wme = wme

@@ -53,13 +53,22 @@ class AlphaMemory:
 class ReteNode:
     """
     Base BetaNode class, tracks parent and children.
+
+    TODO:
+        - Move items into BetaMemory, then anything that uses items will
+          inherit from there.
+        - BetaMemories also have different left and right activations, so these
+          probably need to get stripped too. However, there are issues with
+          assuming their format throughout. The type checking helps to find
+          these.
     """
-    items: Optional[List[Token]]
 
     def __init__(self, children: Optional[List[ReteNode]] = None, parent:
-                 Optional[ReteNode] = None, **kwargs):
+                 Optional[ReteNode] = None, items: Optional[List[Token]] =
+                 None, **kwargs):
         self.children: List[ReteNode] = children if children else []
         self.parent = parent
+        self.items: List[Token] = items if items else []
 
     def dump(self):
         return "%s %s" % (self.__class__.__name__, id(self))
@@ -150,10 +159,10 @@ class Token:
         self.owner: Optional[Token] = None
         self.binding = binding if binding else {}  # {"$x": "B1"}
 
-        if self.wme:
-            self.wme.tokens.append(self)
         if self.parent:
             self.parent.children.append(self)
+        if self.wme:
+            self.wme.tokens.append(self)
 
     def __repr__(self) -> str:
         return "<Token %s>" % self.wmes

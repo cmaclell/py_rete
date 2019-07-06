@@ -18,13 +18,10 @@ class BetaMemory(ReteNode):
         """
         Similar to alpha memory, items is a set of tokens
 
-        TODO:
-            - should items be a set?
-
         :type items: list of Token
         """
-        super(BetaMemory, self).__init__(children=children, parent=parent)
-        self.items: List[Token] = items if items else []
+        super(BetaMemory, self).__init__(children=children, parent=parent,
+                                         items=items)
         self.all_children: List[ReteNode] = []
 
     def left_activation(self, token: Optional[Token] = None,
@@ -44,5 +41,5 @@ class BetaMemory(ReteNode):
         """
         new_token = Token(token, wme, node=self, binding=binding)
         self.items.append(new_token)
-        for child in self.children:
+        for child in reversed(self.children):
             child.left_activation(new_token)

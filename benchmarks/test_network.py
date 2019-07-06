@@ -73,16 +73,16 @@ def test_facts():
     wmes = [e for e in net.wmes]
     assert len(wmes) == 0
 
-    wmes = [WME('B1', 'on', 'B2'),
-            WME('B2', 'color', 'red')]
+    wmes = set([WME('B1', 'on', 'B2'), WME('B2', 'color', 'red')])
 
     for wme in wmes:
         net.add_wme(wme)
 
-    stored_wmes = [e for e in net.wmes]
+    stored_wmes = set([e for e in net.wmes])
     assert len(stored_wmes) == 2
-    assert wmes == stored_wmes
+    assert len(wmes.union(stored_wmes)) == 2
 
+    wmes = list(wmes)
     net.remove_wme(wmes[0])
     stored_wmes = [e for e in net.wmes]
     assert len(stored_wmes) == 1

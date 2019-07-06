@@ -1,4 +1,11 @@
+from __future__ import annotations
+from typing import Optional
+from typing import List
+
+from py_rete.common import AlphaMemory
 from py_rete.common import ReteNode
+from py_rete.common import Token
+from py_rete.common import WME
 
 
 class JoinNode(ReteNode):
@@ -41,7 +48,7 @@ class JoinNode(ReteNode):
               tests?
     """
 
-    def __init__(self, children, parent, amem, tests, has):
+    def __init__(self, children, parent, amem, tests, condition):
         """
         :type children:
         :type parent: BetaNode
@@ -50,21 +57,34 @@ class JoinNode(ReteNode):
         :type has: Has
         """
         super(JoinNode, self).__init__(children=children, parent=parent)
-        self.amem = amem
-        self.tests = tests
-        self.has = has
+        self.amem: AlphaMemory = amem
+        self.tests: List[TestAtJoinNode] = tests
+        self.nearest_ancestor_with_same_amem: Optional[ReteNode] = None
+        self.condition = condition
 
-    def right_activation(self, wme):
+    def right_activation(self, wme: WME):
         """
         Called when an element is added to the respective alpha memory.
 
         :type wme: rete.WME
         """
+        # if len(self.amem) == 1:
+        #     self.relink_to_beta_memory()
+        if not self.parent or self.parent.items is None:
+            return
+        # if not self.parent.items:
+        #     self.amem.successors.remove(self)
         for token in self.parent.items:
             if self.perform_join_test(token, wme):
                 binding = self.make_binding(wme)
                 for child in self.children:
                     child.left_activation(token, wme, binding)
+
+    def relink_to_alpha_memory(self):
+        raise NotImplementedError
+
+    def relink_to_beta_memory(self):
+        raise NotImplementedError
 
     def left_activation(self, token):
         """
@@ -72,13 +92,17 @@ class JoinNode(ReteNode):
 
         :type token: rete.Token
         """
+        # if len(self.parent.items) == 1:
+        #     self.relink_to_alpha_memory()
+        #     if not self.amem.items:
+        #         self.parent.children.remove(self)
         for wme in self.amem.items:
             if self.perform_join_test(token, wme):
                 binding = self.make_binding(wme)
                 for child in self.children:
                     child.left_activation(token, wme, binding)
 
-    def perform_join_test(self, token, wme):
+    def perform_join_test(self, token: Token, wme: WME) -> bool:
         """
         :type token: rete.Token
         :type wme: rete.WME
@@ -96,7 +120,7 @@ class JoinNode(ReteNode):
         :type wme: WME
         """
         binding = {}
-        for field, v in self.has.vars:
+        for field, v in self.condition.vars:
             val = getattr(wme, field)
             binding[v] = val
         return binding

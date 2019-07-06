@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import List
+
 from py_rete.common import Token
 from py_rete.common import ReteNode
 from py_rete.production import Production
@@ -14,7 +17,7 @@ class PNode(ReteNode):
         :type items: list of Token
         """
         super(PNode, self).__init__(children=children, parent=parent)
-        self.items = items if items else []
+        self.items: List[Token] = items if items else []
         self.production = production
 
     def left_activation(self, token, wme, binding=None):

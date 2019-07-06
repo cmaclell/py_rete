@@ -64,7 +64,8 @@ class ReteNode:
     def dump(self):
         return "%s %s" % (self.__class__.__name__, id(self))
 
-    def left_activation(self, token: Optional[Token], wme: Optional[WME],
+    def left_activation(self, token: Optional[Token] = None,
+                        wme: Optional[WME] = None,
                         binding: Optional[dict] = None):
         raise NotImplementedError
 

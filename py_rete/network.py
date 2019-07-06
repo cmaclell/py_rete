@@ -103,13 +103,17 @@ class Network:
     #     """
     #     self.alpha_root.activation(wme)
 
-    @classmethod
-    def remove_wme(cls, wme):
+    def remove_wme(self, wme):
         """
         :type wme: WME
         """
         for am in wme.amems:
             am.items.remove(wme)
+            if not am.items:
+                for node in am.successors:
+                    if isinstance(node, JoinNode):
+                        node.parent.children.remove(node)
+            # dealloc item (how?)
         for t in wme.tokens:
             Token.delete_token_and_descendents(t)
         for jr in wme.negative_join_results:
@@ -117,6 +121,8 @@ class Network:
             if not jr.owner.join_results:
                 for child in jr.owner.node.children:
                     child.left_activation(jr.owner, None)
+
+        self.working_memory.remove(wme)
 
     def dump(self):
         self.buf = ""
@@ -239,13 +245,13 @@ class Network:
         return result
 
     @classmethod
-    def build_or_share_join_node(cls, parent, amem, tests, has):
+    def build_or_share_join_node(cls, parent, amem, tests, condition):
         """
         TODO:
             - Why does this have a `has` arg? This is not in doorenbois
               implementation?
 
-        :type has: Cond
+        :type condition: Cond
         :type parent: BetaNode
         :type amem: AlphaMemory
         :type tests: list of TestAtJoinNode
@@ -253,9 +259,9 @@ class Network:
         """
         for child in parent.children:
             if (isinstance(child, JoinNode) and child.amem == amem and
-                    child.tests == tests and child.has == has):
+                    child.tests == tests and child.condition == condition):
                 return child
-        node = JoinNode([], parent, amem, tests, has)
+        node = JoinNode([], parent, amem, tests, condition)
         parent.children.append(node)
         amem.successors.append(node)
         return node

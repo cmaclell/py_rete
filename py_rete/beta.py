@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional
 from typing import List
 
+from py_rete.common import WME
 from py_rete.common import Token
 from py_rete.common import ReteNode
 
@@ -26,14 +27,16 @@ class BetaMemory(ReteNode):
         self.items: List[Token] = items if items else []
         self.all_children: List[ReteNode] = []
 
-    def left_activation(self, token, wme, binding=None):
+    def left_activation(self, token: Optional[Token] = None,
+                        wme: Optional[WME] = None,
+                        binding: Optional[dict] = None):
         """
         Creates a new token based on the incoming token/wme, adds it to the
         memory (items) then activates the children with the token.
 
         TODO:
             - What about activation or right_activiation?
-            - Token contains the wme, so do we need wme?
+            - check order of activating children
 
         :type binding: dict
         :type wme: WME

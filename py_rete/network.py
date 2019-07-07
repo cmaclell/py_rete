@@ -276,13 +276,14 @@ class Network:
 
     def build_or_share_negative_node(self, parent: JoinNode, amem: AlphaMemory,
                                      tests: List[TestAtJoinNode],
-                                     condition: Cond) -> NegativeNode:
+                                     condition: Neg) -> NegativeNode:
         """
         :type parent: BetaNode
         :type amem: AlphaMemory
         :type tests: list of TestAtJoinNode
         :rtype: JoinNode
         """
+
         for child in parent.children:
             if (isinstance(child, NegativeNode) and child.amem == amem and
                     child.tests == tests):
@@ -391,7 +392,7 @@ class Network:
         current_node = parent
         conds_higher_up = earlier_conds
         for cond in rule:
-            if isinstance(cond, Cond):
+            if isinstance(cond, Cond) and not isinstance(cond, Neg):
                 current_node = self.build_or_share_beta_memory(current_node)
                 tests = self.get_join_tests_from_condition(cond,
                                                            conds_higher_up)

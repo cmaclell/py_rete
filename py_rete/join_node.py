@@ -79,7 +79,7 @@ class JoinNode(ReteNode):
         return len(self.amem.items) == 0
 
     def update_nearest_ancestor_with_same_amem(self):
-        ancestor = self.find_nearest_ancestor_with_same_amem(self.amem)
+        ancestor = self.parent.find_nearest_ancestor_with_same_amem(self.amem)
         self.nearest_ancestor_with_same_amem = ancestor
 
     def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):

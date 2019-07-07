@@ -10,6 +10,7 @@ from py_rete.join_node import JoinNode
 
 if TYPE_CHECKING:
     from typing import List
+    from py_rete.common import WME
 
 
 class NegativeNode(BetaMemory, JoinNode):  # type: ignore
@@ -57,7 +58,7 @@ class NegativeNode(BetaMemory, JoinNode):  # type: ignore
         if not self.items:
             self.relink_to_alpha_memory()
 
-        new_token = Token(token, wme, self, binding)
+        new_token = Token(parent=token, wme=wme, node=self, binding=binding)
         self.items.append(new_token)
 
         for item in self.amem.items:
@@ -83,3 +84,16 @@ class NegativeNode(BetaMemory, JoinNode):  # type: ignore
                 jr = NegativeJoinResult(t, wme)
                 t.join_results.append(jr)
                 wme.negative_join_results.append(jr)
+
+    def perform_join_test(self, token: Token, wme: WME):
+        """
+        :type token: rete.Token
+        :type wme: rete.WME
+        """
+        for this_test in self.tests:
+            arg1 = getattr(wme, this_test.field_of_arg1)
+            wme2 = token.wmes[this_test.condition_number_of_arg2]
+            arg2 = getattr(wme2, this_test.field_of_arg2)
+            if arg1 != arg2:
+                return False
+        return True

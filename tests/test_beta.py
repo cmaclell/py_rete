@@ -141,6 +141,22 @@ def test_negative_condition():
     ]
     for wme in wmes:
         net.add_wme(wme)
+
+    am0 = net.build_or_share_alpha_memory(c0)
+    am1 = net.build_or_share_alpha_memory(c1)
+    am2 = net.build_or_share_alpha_memory(c2)
+    dummy_join = am0.successors[0]
+    join_on_value_y = am1.successors[0]
+    join_on_value_z = am2.successors[0]
+    match_c0 = dummy_join.children[0]
+    match_c0c1 = join_on_value_y.children[0]
+    match_c0c1c2 = join_on_value_z.children[0]
+
+    print(match_c0.items)
+    print(match_c0c1.items)
+    print(type(join_on_value_z))
+    print(match_c0c1c2.items)
+
     assert p0.items[0].wmes == [
         WME('B1', 'on', 'B3'),
         WME('B3', 'left-of', 'B4'),

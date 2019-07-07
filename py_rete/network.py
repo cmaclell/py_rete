@@ -479,10 +479,3 @@ class Network:
                 self.delete_node_and_any_unused_ancestors(node.parent)
         elif not node.parent.children:
             self.delete_node_and_any_unused_ancestors(node.parent)
-
-        # else:
-        #     for item in node.items:
-        #         item.delete_token_and_descendents()
-        # node.parent.children.remove(node)
-        # if not node.parent.children:
-        #     self.delete_node_and_any_unused_ancestors(node.parent)

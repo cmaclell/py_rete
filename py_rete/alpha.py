@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 class AlphaMemory:
 
-    def __init__(self, items: Optional[List[WME]] = None, successors=None) -> None:
+    def __init__(self, items: Optional[List[WME]] = None, successors=None
+                 ) -> None:
         """
         Stores a set of WMEs (items). If activating an activated wme does not
         exist, then it addes it. It also right activates all of its successors,

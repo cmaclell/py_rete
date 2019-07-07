@@ -5,7 +5,6 @@ from typing import Optional
 
 from py_rete.common import is_var
 from py_rete.common import WME
-from py_rete.common import Token
 
 
 class Cond:

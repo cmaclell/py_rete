@@ -16,9 +16,9 @@ def test_filter_compare():
     f2 = Filter('$x>200 and $x<400')
     f3 = Filter('$x>300')
 
-    p0 = net.add_production(Production(AndCond(c0, f0, f1)))
-    p1 = net.add_production(Production(AndCond(c0, f2)))
-    p2 = net.add_production(Production(AndCond(c0, f3)))
+    p0 = net.add_production(Production("test0", AndCond(c0, f0, f1)))
+    p1 = net.add_production(Production("test1", AndCond(c0, f2)))
+    p2 = net.add_production(Production("test2", AndCond(c0, f3)))
     net.add_wme(WME('spu:1', 'price', '100'))
     net.add_wme(WME('spu:1', 'price', '150'))
     net.add_wme(WME('spu:1', 'price', '300'))
@@ -39,13 +39,13 @@ def test_bind():
     c0 = Cond('spu:1', 'sales', '$x')
     b0 = Bind('len(set($x) & set(range(1, 100)))', '$num')
     f0 = Filter('$num > 0')
-    p0 = net.add_production(Production(AndCond(c0, b0, f0)))
+    p0 = net.add_production(Production('test0', AndCond(c0, b0, f0)))
 
     b1 = Bind('len(set($x) & set(range(100, 200)))', '$num')
-    p1 = net.add_production(Production(AndCond(c0, b1, f0)))
+    p1 = net.add_production(Production('test1', AndCond(c0, b1, f0)))
 
     b2 = Bind('len(set($x) & set(range(300, 400)))', '$num')
-    p2 = net.add_production(Production(AndCond(c0, b2, f0)))
+    p2 = net.add_production(Production('test2', AndCond(c0, b2, f0)))
 
     net.add_wme(WME('spu:1', 'sales', 'range(50, 110)'))
 

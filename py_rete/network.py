@@ -31,9 +31,6 @@ from py_rete.production import Production
 class Network:
     """
     TODO:
-        - Consider extensions from Doorenbois for unlinking (pg. 102).
-        - Add top level function for getting the current set of active wmes
-            - maybe from the top level memory?
         - Add a top level function to get teh current set of productions that
           match
             - Need to track the pnodes somewhere?
@@ -50,11 +47,24 @@ class Network:
         self.pnodes: List[PNode] = []
         self.working_memory: Set[WME] = set([])
 
+    def fire_all(self):
+        effects = []
+        for prod, t in self.new_matches:
+            effects += prod.get_effects(t)
+        for e in effects:
+            self.add_wme(e)
+
     @property
-    def matches(self) -> Generator[Token, None, None]:
+    def new_matches(self) -> Generator[Tuple[Production, Token], None, None]:
+        for pnode in self.pnodes:
+            for t in pnode.new:
+                yield (pnode.production, t)
+
+    @property
+    def matches(self) -> Generator[Tuple[Production, Token], None, None]:
         for pnode in self.pnodes:
             for t in pnode.items:
-                yield t
+                yield (pnode.production, t)
 
     @property
     def wmes(self) -> Set[WME]:
@@ -208,7 +218,7 @@ class Network:
                                       ) -> List[TestAtJoinNode]:
         """
         :type c: Cond
-        :type earlier_conds: Rule
+        :type earlier_conds: List of Cond
         :rtype: list of TestAtJoinNode
         """
         result = []

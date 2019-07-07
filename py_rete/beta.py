@@ -14,14 +14,6 @@ if TYPE_CHECKING:
 class ReteNode:
     """
     Base BetaNode class, tracks parent and children.
-
-    TODO:
-        - Move items into BetaMemory, then anything that uses items will
-          inherit from there.
-        - BetaMemories also have different left and right activations, so these
-          probably need to get stripped too. However, there are issues with
-          assuming their format throughout. The type checking helps to find
-          these.
     """
 
     def __init__(self, children=None, parent=None, **kwargs):

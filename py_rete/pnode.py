@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import List
 
 from py_rete.common import Token
 from py_rete.production import Production
@@ -16,6 +17,7 @@ class PNode(BetaMemory):
         """
         super(PNode, self).__init__(**kwargs)
         self.production = production
+        self.new: List[Token] = []
 
     def left_activation(self, token, wme, binding=None):
         """
@@ -25,6 +27,12 @@ class PNode(BetaMemory):
         """
         new_token = Token(token, wme, node=self, binding=binding)
         self.items.append(new_token)
+        self.new.append(new_token)
+
+    def new_activations(self):
+        while self.new:
+            t = self.new.pop()
+            yield t
 
     @property
     def activations(self):

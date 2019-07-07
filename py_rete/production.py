@@ -1,10 +1,15 @@
 from __future__ import annotations
-from typing import List
-from typing import Tuple
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from py_rete.common import is_var
 from py_rete.common import WME
+
+if TYPE_CHECKING:
+    from py_rete.common import Token
+    from typing import List
+    from typing import Dict
+    from typing import Tuple
+    from typing import Optional
 
 
 class Cond:
@@ -12,12 +17,10 @@ class Cond:
     Essentially a pattern/condition to match, can have variables.
 
     TODO:
-        - Rename as conditions.
         - Change order to be prefix? idk.
     """
 
-    def __init__(self, identifier: Optional[str] = None, attribute:
-                 Optional[str] = None, value: Optional[str] = None) -> None:
+    def __init__(self, identifier: str, attribute: str, value: str):
         """
         Constructor.
 
@@ -189,25 +192,72 @@ class Bind:
         return hash(tuple(['bind', self.tmpl, self.to]))
 
 
+class Effect(Cond):
+    """
+    Like a condition, but used in effects of productions, can be instantiated
+    with a binding to produce a WME for adding to working memory.
+    """
+
+    def __hash__(self):
+        return hash(tuple(['effect', self.identifier, self.attribute,
+                           self.value]))
+
+    def bind(self, binding: Dict[str, str]) -> WME:
+        identifier = self.identifier
+        attribute = self.attribute
+        value = self.value
+
+        while is_var(identifier) and identifier in binding:
+            identifier = binding[identifier]
+        while is_var(attribute) and attribute in binding:
+            attribute = binding[attribute]
+        while is_var(value) and value in binding:
+            value = binding[value]
+
+        return WME(identifier, attribute, value)
+
+
+class AndEffect(list):
+    """
+    A conjunction of effects.
+    """
+
+    def __init__(self, *args: List[Effect]):
+        self.extend(args)
+
+    def bind(self, binding: Dict[str, str]) -> List[WME]:
+        return [eff.bind(binding) for eff in self]
+
+
 class Production:
     """
     A left and a right side
+
+    TODO:
+        - What do we do with empty conditions?
+        - What do we do with empty effects? Currently just pass None, can rules
+          ever have empty effects? Maybe ok, if they have more complicated
+          effects.
     """
 
-    def __init__(self, lhs: AndCond, add_effects=None,
-                 del_effects=None) -> None:
+    def __init__(self, name: str, lhs: AndCond,
+                 rhs: Optional[AndEffect] = None):
+        self.name = name
         self.lhs = lhs
-        self.add_effects = add_effects
-        self.del_effects = del_effects
+        self.rhs = rhs
 
     def __repr__(self) -> str:
-        return (repr(self.lhs) + " --> Add:" + repr(self.add_effects) + " Del:"
-                + repr(self.del_effects))
+        return (self.name + ": " + repr(self.lhs) + " --> " +
+                repr(self.rhs))
 
     def __eq__(self, other: object) -> bool:
         return (isinstance(other, Production) and self.lhs == other.lhs and
-                self.add_effects == other.add_effects and self.del_effects ==
-                other.del_effects)
+                self.rhs == other.rhs)
 
     def __hash__(self):
-        return hash(tuple(self.lhs))
+        return hash(tuple('production', self.lhs, self.rhs))
+
+    def get_effects(self, token: Token):
+        if self.rhs:
+            return self.rhs.bind(token.binding)
+        return []

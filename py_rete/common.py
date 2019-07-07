@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def is_var(v):
-    return v.startswith('$')
+    return isinstance(v, str) and v.startswith('$')
 
 
 class WME:

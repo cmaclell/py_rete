@@ -1,28 +1,60 @@
 from __future__ import annotations
-from typing import Optional
-from typing import List
+from typing import TYPE_CHECKING
 
-from py_rete.common import WME
 from py_rete.common import Token
-from py_rete.common import ReteNode
+
+if TYPE_CHECKING:
+    from typing import List
+    from typing import Optional
+    from py_rete.common import WME
+    from py_rete.alpha import AlphaMemory
+    from py_rete.join_node import JoinNode
+
+
+class ReteNode:
+    """
+    Base BetaNode class, tracks parent and children.
+
+    TODO:
+        - Move items into BetaMemory, then anything that uses items will
+          inherit from there.
+        - BetaMemories also have different left and right activations, so these
+          probably need to get stripped too. However, there are issues with
+          assuming their format throughout. The type checking helps to find
+          these.
+    """
+
+    def __init__(self, children=None, parent=None, **kwargs):
+        super(ReteNode, self).__init__()
+        self.children = children if children else []
+        self.parent = parent
+
+    def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):
+        return None
+
+    def dump(self):
+        return "%s %s" % (self.__class__.__name__, id(self))
 
 
 class BetaMemory(ReteNode):
     """
-    A memory to store tokens in the beta network."
+    A memory node for the beta network.
     """
+    parent: JoinNode
+    children: List[JoinNode]
 
-    def __init__(self, children: Optional[List[ReteNode]] = None,
-                 parent: Optional[ReteNode] = None,
-                 items: Optional[List[Token]] = None):
+    def __init__(self, items: Optional[List[Token]] = None, **kwargs):
         """
-        Similar to alpha memory, items is a set of tokens
+        Similar to alpha memory, but items is a set of tokens instead of wmes.
 
         :type items: list of Token
         """
-        super(BetaMemory, self).__init__(children=children, parent=parent,
-                                         items=items)
-        self.all_children: List[ReteNode] = []
+        super(BetaMemory, self).__init__(**kwargs)
+        self.items: List[Token] = items if items else []
+        self.all_children: List[JoinNode] = []
+
+    def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):
+        return self.parent.find_nearest_ancestor_with_same_amem(amem)
 
     def left_activation(self, token: Optional[Token] = None,
                         wme: Optional[WME] = None,
@@ -41,5 +73,5 @@ class BetaMemory(ReteNode):
         """
         new_token = Token(token, wme, node=self, binding=binding)
         self.items.append(new_token)
-        for child in reversed(self.children):
+        for child in self.children:
             child.left_activation(new_token)

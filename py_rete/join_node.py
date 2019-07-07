@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import Optional
-from typing import List
+from typing import TYPE_CHECKING
 
-from py_rete.common import AlphaMemory
-from py_rete.common import ReteNode
 from py_rete.common import Token
 from py_rete.common import WME
+from py_rete.alpha import AlphaMemory
+from py_rete.beta import ReteNode
+
+if TYPE_CHECKING:
+    from typing import List
+    from py_rete.beta import BetaMemory
 
 
 class JoinNode(ReteNode):
@@ -36,19 +39,16 @@ class JoinNode(ReteNode):
 
     TODO:
         - Why does it get a has, or a pattern?
-        - Consider using hashing in left and right activations, so only
-          portions of the respective memories need to be searched. E.g.,
-          memories might be indexed by the 8 constant/var patterns for
-          patterns, which should reduce iteration substantially (but increase
-          mem usage). See page 25 of Doorenbos thesis.
         - perform_join_test
             - Push the actual test evaluation into the TestAtJoinNode class, so
               it can be subclassed with other kinds of tests.
             - Currently only supports equality, maybe add support for other
               tests?
     """
+    parent: BetaMemory
+    children: List[BetaMemory]
 
-    def __init__(self, children, parent, amem, tests, condition):
+    def __init__(self, amem, tests, condition, **kwargs):
         """
         :type children:
         :type parent: BetaNode
@@ -56,24 +56,50 @@ class JoinNode(ReteNode):
         :type tests: list of TestAtJoinNode
         :type has: Has
         """
-        super(JoinNode, self).__init__(children=children, parent=parent)
+        super(JoinNode, self).__init__(**kwargs)
         self.amem: AlphaMemory = amem
         self.tests: List[TestAtJoinNode] = tests
-        self.nearest_ancestor_with_same_amem: Optional[ReteNode] = None
         self.condition = condition
+        self.nearest_ancestor_with_same_amem = None
+
+    @property
+    def amem_recently_nonempty(self) -> bool:
+        return len(self.amem.items) == 1
+
+    @property
+    def parent_recently_nonempty(self) -> bool:
+        return len(self.parent.items) == 1
+
+    @property
+    def right_unlinked(self) -> bool:
+        return len(self.parent.items) == 0
+
+    @property
+    def left_unlinked(self) -> bool:
+        return len(self.amem.items) == 0
+
+    def update_nearest_ancestor_with_same_amem(self):
+        ancestor = self.find_nearest_ancestor_with_same_amem(self.amem)
+        self.nearest_ancestor_with_same_amem = ancestor
+
+    def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):
+        if self.amem == amem:
+            return self
+        return self.parent.find_nearest_ancestor_with_same_amem(amem)
 
     def right_activation(self, wme: WME):
         """
         Called when an element is added to the respective alpha memory.
 
+        TODO:
+            - Explore typing, parent and parent.items should not be optional.
+
         :type wme: rete.WME
         """
-        # if len(self.amem) == 1:
-        #     self.relink_to_beta_memory()
-        if not self.parent or self.parent.items is None:
-            return
-        # if not self.parent.items:
-        #     self.amem.successors.remove(self)
+        if self.amem_recently_nonempty:
+            self.relink_to_beta_memory()
+            if not self.parent.items:
+                self.amem.successors.remove(self)
         for token in self.parent.items:
             if self.perform_join_test(token, wme):
                 binding = self.make_binding(wme)
@@ -81,10 +107,28 @@ class JoinNode(ReteNode):
                     child.left_activation(token, wme, binding)
 
     def relink_to_alpha_memory(self):
-        raise NotImplementedError
+        """
+        TODO:
+            - test and verify
+        """
+        ancestor = self.nearest_ancestor_with_same_amem
+        while ancestor and ancestor.right_unlinked:
+            ancestor = ancestor.nearest_ancestor_with_same_amem
+        if ancestor:
+            try:
+                loc = self.amem.successors.index(ancestor)
+            except ValueError:
+                loc = -1
+            self.amem.successors.insert(loc+1, self)
+        else:
+            self.amem.successors.insert(0, self)
 
     def relink_to_beta_memory(self):
-        raise NotImplementedError
+        """
+        TODO:
+            - test and verify
+        """
+        self.parent.children.append(self)
 
     def left_activation(self, token):
         """
@@ -92,10 +136,10 @@ class JoinNode(ReteNode):
 
         :type token: rete.Token
         """
-        # if len(self.parent.items) == 1:
-        #     self.relink_to_alpha_memory()
-        #     if not self.amem.items:
-        #         self.parent.children.remove(self)
+        if self.parent_recently_nonempty:
+            self.relink_to_alpha_memory()
+            if not self.amem.items:
+                self.parent.children.remove(self)
         for wme in self.amem.items:
             if self.perform_join_test(token, wme):
                 binding = self.make_binding(wme)

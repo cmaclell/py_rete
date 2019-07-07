@@ -1,12 +1,11 @@
 from __future__ import annotations
-from typing import List
-from typing import Optional
 
 from py_rete.common import Token
-from py_rete.beta import ReteNode
+from py_rete.alpha import AlphaMemory
+from py_rete.beta import BetaMemory
 
 
-class NccNode(ReteNode):
+class NccNode(BetaMemory):
     """
     A beta network class for negated conjunctive conditions (ncc).
 
@@ -33,17 +32,16 @@ class NccNode(ReteNode):
           (which also iterates)?
     """
 
-    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
-                 Optional[ReteNode] = None,
-                 items: Optional[List[Token]] = None, partner: NccPartnerNode =
-                 None):
+    def __init__(self, partner=None, **kwargs):
         """
         :type partner: NccPartnerNode
         :type items: list of rete.Token
         """
-        super(NccNode, self).__init__(children=children, parent=parent)
-        self.items = items if items else []
+        super(NccNode, self).__init__(**kwargs)
         self.partner = partner
+
+    def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):
+        return self.partner.parent.find_nearest_ancestor_with_same_amem(amem)
 
     def left_activation(self, token, wme, binding=None):
         """
@@ -62,7 +60,7 @@ class NccNode(ReteNode):
                 child.left_activation(new_token, None)
 
 
-class NccPartnerNode(ReteNode):
+class NccPartnerNode:
     """
     The partner node for negated conjunctive conditions node.
 
@@ -77,15 +75,13 @@ class NccPartnerNode(ReteNode):
           to distinguish/verify.
     """
 
-    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
-                 Optional[ReteNode] = None, ncc_node: Optional[NccNode] = None,
-                 number_of_conditions: int = 0, new_result_buffer:
-                 Optional[List[Token]] = None):
+    def __init__(self, parent=None, ncc_node=None, number_of_conditions=0,
+                 new_result_buffer=None):
         """
         :type new_result_buffer: list of rete.Token
         :type ncc_node: NccNode
         """
-        super(NccPartnerNode, self).__init__(children=children, parent=parent)
+        self.parent = parent
         self.ncc_node = ncc_node
         self.number_of_conditions = number_of_conditions
         self.new_result_buffer = new_result_buffer if new_result_buffer else []
@@ -106,31 +102,8 @@ class NccPartnerNode(ReteNode):
             if token.parent == owners_t and token.wme == owners_w:
                 token.ncc_results.append(new_result)
                 new_result.owner = token
-
-                # TODO: Doorenboos suggests the use of this helper instead.
-                # write tests to confirm.
-                Token.delete_descendents_of_token(token)
-                # Token.delete_token_and_descendents(token)
-
-        self.new_result_buffer.append(new_result)
-
-    # def left_activation(self, token, wme, binding=None):
-    #     """
-    #     :type w: rete.WME
-    #     :type t: rete.Token
-    #     :type binding: dict
-    #     """
-    #     new_result = Token(token, wme, self, binding)
-    #     owners_t = token
-    #     owners_w = wme
-    #     for i in range(self.number_of_conditions):
-    #         owners_w = owners_t.wme
-    #         owners_t = owners_t.parent
-    #     for token in self.ncc_node.items:
-    #         if token.parent == owners_t and token.wme == owners_w:
-    #             token.ncc_results.append(new_result)
-    #             new_result.owner = token
-    #             Token.delete_token_and_descendents(token)
-    #             break
-    #     else:
-    #         self.new_result_buffer.append(new_result)
+                token.delete_descendents_of_token()
+                # token.delete_token_and_descendents()
+                break
+        else:
+            self.new_result_buffer.append(new_result)

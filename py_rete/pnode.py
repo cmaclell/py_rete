@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import List
 
 from py_rete.common import Token
-from py_rete.common import ReteNode
 from py_rete.production import Production
+from py_rete.beta import ReteNode
 
 
 class PNode(ReteNode):

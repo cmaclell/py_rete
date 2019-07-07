@@ -5,81 +5,17 @@
             - seems to be used in other functions to get the field names
 """
 from __future__ import annotations
-from typing import List
-from typing import Optional
-from typing import Generator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import List
+    from typing import Optional
+    from py_rete.alpha import AlphaMemory
+    from py_rete.beta import ReteNode
 
 
 def is_var(v):
     return v.startswith('$')
-
-
-class AlphaMemory:
-
-    def __init__(self, items: Optional[List[WME]] = None, successors:
-                 Optional[List[ReteNode]] = None) -> None:
-        """
-        Stores a set of WMEs (items). If activating an activated wme does not
-        exist, then it addes it. It also right activates all of its successors,
-        which correspond ot beta nodes.
-
-        TODO:
-            - replace self.items with a set rather than a list?
-            - why are beta nodes (successors) activated in reverse order?
-
-        :type successors: list of BetaNode
-        :type items: list of rete.WME
-        """
-        self.items: List[WME] = items if items else []
-        self.successors: List[ReteNode] = successors if successors else []
-        self.reference_count = 0
-
-    def activations(self) -> Generator[WME, None, None]:
-        for wme in self.items:
-            yield wme
-
-    def activation(self, wme: WME) -> None:
-        """
-        :type wme: rete.WME
-        """
-        if wme in self.items:
-            return
-        self.items.append(wme)
-        wme.amems.append(self)
-        for child in reversed(self.successors):
-            child.right_activation(wme)
-
-
-class ReteNode:
-    """
-    Base BetaNode class, tracks parent and children.
-
-    TODO:
-        - Move items into BetaMemory, then anything that uses items will
-          inherit from there.
-        - BetaMemories also have different left and right activations, so these
-          probably need to get stripped too. However, there are issues with
-          assuming their format throughout. The type checking helps to find
-          these.
-    """
-
-    def __init__(self, children: Optional[List[ReteNode]] = None, parent:
-                 Optional[ReteNode] = None, items: Optional[List[Token]] =
-                 None, **kwargs):
-        self.children: List[ReteNode] = children if children else []
-        self.parent = parent
-        self.items: List[Token] = items if items else []
-
-    def dump(self):
-        return "%s %s" % (self.__class__.__name__, id(self))
-
-    def left_activation(self, token: Optional[Token] = None,
-                        wme: Optional[WME] = None,
-                        binding: Optional[dict] = None):
-        raise NotImplementedError
-
-    def right_activation(self, wme: WME):
-        raise NotImplementedError
 
 
 class WME:
@@ -228,17 +164,24 @@ class Token:
         from py_rete.ncc_node import NccNode
         from py_rete.ncc_node import NccPartnerNode
         from py_rete.negative_node import NegativeNode
+        from py_rete.beta import BetaMemory
 
         for child in self.children:
             child.delete_token_and_descendents()
-        if (self.node and self.node.items and not
-                isinstance(self.node, NccPartnerNode)):
+        if isinstance(self.node, BetaMemory):
             self.node.items.remove(self)
         if self.wme:
             self.wme.tokens.remove(self)
         if self.parent:
             self.parent.children.remove(self)
+
+        if isinstance(self.node, BetaMemory):
+            if not self.node.items:
+                for bmchild in self.node.children:
+                    bmchild.amem.successors.remove(bmchild)
         if isinstance(self.node, NegativeNode):
+            if not self.node.items:
+                self.node.amem.successors.remove(self.node)
             for jr in self.join_results:
                 jr.wme.negative_join_results.remove(jr)
         elif isinstance(self.node, NccNode):
@@ -248,11 +191,10 @@ class Token:
                 if result_tok.parent:
                     result_tok.parent.children.remove(result_tok)
         elif isinstance(self.node, NccPartnerNode):
-            if self.owner:
-                self.owner.ncc_results.remove(self)
-                if not self.owner.ncc_results and self.node.ncc_node:
-                    for bchild in self.node.ncc_node.children:
-                        bchild.left_activation(self.owner, None)
+            self.owner.ncc_results.remove(self)
+            if not self.owner.ncc_results and self.node.ncc_node:
+                for bchild in self.node.ncc_node.children:
+                    bchild.left_activation(self.owner, None)
 
 
 class NegativeJoinResult:

@@ -1,5 +1,5 @@
 import copy
-from py_rete.common import ReteNode
+from py_rete.beta import ReteNode
 
 
 class BindNode(ReteNode):
@@ -15,8 +15,6 @@ class BindNode(ReteNode):
         - Use functions/partials instead of string code snipits, with arg
           lists that contain variables or constants
     """
-
-    kind = 'bind-node'
 
     def __init__(self, children, parent, tmpl, to):
         """

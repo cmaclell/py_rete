@@ -11,14 +11,13 @@ from py_rete.filter_node import FilterNode
 from py_rete.ncc_node import NccPartnerNode
 from py_rete.ncc_node import NccNode
 from py_rete.negative_node import NegativeNode
-from py_rete.alpha import ConstantTestNode
 from py_rete.join_node import TestAtJoinNode
 from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
 from py_rete.common import WME
 from py_rete.common import Token
-from py_rete.common import ReteNode
-from py_rete.common import AlphaMemory
+from py_rete.alpha import AlphaMemory
+from py_rete.beta import ReteNode
 from py_rete.beta import BetaMemory
 from py_rete.production import Cond
 from py_rete.production import Ncc
@@ -103,7 +102,7 @@ class Network:
     #     """
     #     self.alpha_root.activation(wme)
 
-    def remove_wme(self, wme):
+    def remove_wme(self, wme: WME):
         """
         :type wme: WME
         """
@@ -112,15 +111,18 @@ class Network:
             if not am.items:
                 for node in am.successors:
                     if isinstance(node, JoinNode):
-                        node.parent.children.remove(node)
-            # dealloc item (how?)
+                        # TODO fix type error, triggered by negativenode, which
+                        # is also a betamemory, it confuses mypy because of
+                        # multiple inheritance
+                        node.parent.children.remove(node)  # type: ignore
         for t in wme.tokens:
-            Token.delete_token_and_descendents(t)
+            t.delete_token_and_descendents()
         for jr in wme.negative_join_results:
             jr.owner.join_results.remove(jr)
             if not jr.owner.join_results:
-                for child in jr.owner.node.children:
-                    child.left_activation(jr.owner, None)
+                if jr.owner.node and jr.owner.node.children is not None:
+                    for child in jr.owner.node.children:
+                        child.left_activation(jr.owner, None)
 
         self.working_memory.remove(wme)
 
@@ -222,12 +224,10 @@ class Network:
     #     return am
 
     @classmethod
-    def get_join_tests_from_condition(cls, c, earlier_conds):
+    def get_join_tests_from_condition(cls, c: Cond,
+                                      earlier_conds: List[Cond]
+                                      ) -> List[TestAtJoinNode]:
         """
-        TODO:
-            - we iterate through the earlier conditions, this can be terminated
-              once we find something, we don't need to keep iterating.
-
         :type c: Cond
         :type earlier_conds: Rule
         :rtype: list of TestAtJoinNode
@@ -245,29 +245,39 @@ class Network:
         return result
 
     @classmethod
-    def build_or_share_join_node(cls, parent, amem, tests, condition):
+    def build_or_share_join_node(cls, parent: BetaMemory, amem: AlphaMemory,
+                                 tests: List[TestAtJoinNode], condition: Cond
+                                 ) -> JoinNode:
         """
-        TODO:
-            - Why does this have a `has` arg? This is not in doorenbois
-              implementation?
-
         :type condition: Cond
         :type parent: BetaNode
         :type amem: AlphaMemory
         :type tests: list of TestAtJoinNode
         :rtype: JoinNode
         """
-        for child in parent.children:
-            if (isinstance(child, JoinNode) and child.amem == amem and
+        for child in parent.all_children:
+            # maybe use isinstance(child, JoinNode)
+            if (type(child) == JoinNode and child.amem == amem and
                     child.tests == tests and child.condition == condition):
                 return child
-        node = JoinNode([], parent, amem, tests, condition)
+        node = JoinNode(children=[], parent=parent, amem=amem, tests=tests,
+                        condition=condition)
         parent.children.append(node)
+        parent.all_children.append(node)
         amem.successors.append(node)
+        amem.reference_count += 1
+        node.update_nearest_ancestor_with_same_amem()
+        if not parent.items:
+            amem.successors.remove(node)
+        elif not amem.items:
+            parent.children.remove(node)
+
         return node
 
     @classmethod
-    def build_or_share_negative_node(cls, parent, amem, tests):
+    def build_or_share_negative_node(cls, parent: JoinNode, amem: AlphaMemory,
+                                     tests: List[TestAtJoinNode],
+                                     condition: Cond) -> NegativeNode:
         """
         :type parent: BetaNode
         :type amem: AlphaMemory
@@ -278,18 +288,27 @@ class Network:
             if (isinstance(child, NegativeNode) and child.amem == amem and
                     child.tests == tests):
                 return child
-        node = NegativeNode(parent=parent, amem=amem, tests=tests)
+        node = NegativeNode(parent=parent, amem=amem, tests=tests,
+                            condition=condition)
         parent.children.append(node)
         amem.successors.append(node)
+
+        amem.reference_count += 1
+        node.update_nearest_ancestor_with_same_amem()
+        cls.update_new_node_with_matches_from_above(node)
+        if not node.items:
+            amem.successors.remove(node)
+
         return node
 
-    def build_or_share_beta_memory(self, parent):
+    def build_or_share_beta_memory(self, parent: JoinNode) -> BetaMemory:
         """
-        :type parent: BetaNode
+        :type parent: JoinNode
         :rtype: BetaMemory
         """
         for child in parent.children:
-            if isinstance(child, BetaMemory):
+            # if isinstance(child, BetaMemory):  # Don't include subclasses
+            if type(child) == BetaMemory:
                 return child
         node = BetaMemory(parent=parent)
         parent.children.append(node)
@@ -313,7 +332,9 @@ class Network:
         self.update_new_node_with_matches_from_above(node)
         return node
 
-    def build_or_share_ncc_nodes(self, parent, ncc, earlier_conds):
+    def build_or_share_ncc_nodes(self, parent: JoinNode, ncc: Ncc,
+                                 earlier_conds: List[Cond]
+                                 ) -> NccNode:
         """
         :type earlier_conds: Rule
         :type ncc: Ncc
@@ -325,12 +346,12 @@ class Network:
             if (isinstance(child, NccNode) and child.partner.parent ==
                     bottom_of_subnetwork):
                 return child
-        ncc_node = NccNode([], parent)
-        ncc_partner = NccPartnerNode([], bottom_of_subnetwork)
-        parent.children.append(ncc_node)
-        bottom_of_subnetwork.children.append(ncc_partner)
-        ncc_node.partner = ncc_partner
+
+        ncc_partner = NccPartnerNode(parent=bottom_of_subnetwork)
+        ncc_node = NccNode(partner=ncc_partner, children=[], parent=parent)
         ncc_partner.ncc_node = ncc_node
+        parent.children.insert(0, ncc_node)
+        bottom_of_subnetwork.children.append(ncc_partner)
         ncc_partner.number_of_conditions = ncc.number_of_conditions
         self.update_new_node_with_matches_from_above(ncc_node)
         self.update_new_node_with_matches_from_above(ncc_partner)
@@ -361,8 +382,8 @@ class Network:
         parent.children.append(node)
         return node
 
-    def build_or_share_network_for_conditions(self, parent, rule,
-                                              earlier_conds):
+    def build_or_share_network_for_conditions(self, parent, rule: List[Cond],
+                                              earlier_conds: List[Cond]):
         """
         :type earlier_conds: list of BaseCondition
         :type parent: BetaNode
@@ -371,19 +392,20 @@ class Network:
         current_node = parent
         conds_higher_up = earlier_conds
         for cond in rule:
-            if isinstance(cond, Neg):
-                tests = self.get_join_tests_from_condition(cond,
-                                                           conds_higher_up)
-                am = self.build_or_share_alpha_memory(cond)
-                current_node = self.build_or_share_negative_node(current_node,
-                                                                 am, tests)
-            elif isinstance(cond, Cond):
+            if isinstance(cond, Cond):
                 current_node = self.build_or_share_beta_memory(current_node)
                 tests = self.get_join_tests_from_condition(cond,
                                                            conds_higher_up)
                 am = self.build_or_share_alpha_memory(cond)
                 current_node = self.build_or_share_join_node(current_node, am,
                                                              tests, cond)
+            elif isinstance(cond, Neg):
+                tests = self.get_join_tests_from_condition(cond,
+                                                           conds_higher_up)
+                am = self.build_or_share_alpha_memory(cond)
+                current_node = self.build_or_share_negative_node(current_node,
+                                                                 am, tests,
+                                                                 cond)
             elif isinstance(cond, Ncc):
                 current_node = self.build_or_share_ncc_nodes(current_node,
                                                              cond,
@@ -402,10 +424,12 @@ class Network:
         """
         :type new_node: BetaNode
         """
+        # TODO: named arguments for activations, confusing which is being
+        # called.
         parent = new_node.parent
         if isinstance(parent, BetaMemory):
             for tok in parent.items:
-                new_node.left_activation(tok, None)
+                new_node.left_activation(token=tok)
         elif isinstance(parent, JoinNode):
             saved_list_of_children = parent.children
             parent.children = [new_node]

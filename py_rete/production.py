@@ -48,6 +48,10 @@ class Cond:
                 and self.attribute == other.attribute
                 and self.value == other.value)
 
+    def __hash__(self):
+        return hash(tuple(['cond', self.identifier, self.attribute,
+                           self.value]))
+
     @property
     def vars(self) -> List[Tuple[str, str]]:
         """
@@ -107,6 +111,10 @@ class Neg(Cond):
     def __repr__(self):
         return "-(%s %s %s)" % (self.identifier, self.attribute, self.value)
 
+    def __hash__(self):
+        return hash(tuple(['neg', self.identifier, self.attribute,
+                           self.value]))
+
 
 class AndCond(list):
     """
@@ -135,6 +143,9 @@ class Ncc(AndCond):
     def number_of_conditions(self) -> int:
         return len(self)
 
+    def __hash__(self):
+        return hash(tuple(['ncc', tuple(self)]))
+
 
 class Filter:
     """
@@ -150,6 +161,9 @@ class Filter:
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Filter) and self.tmpl == other.tmpl
+
+    def __hash__(self):
+        return hash(tuple(['filter', self.tmpl]))
 
 
 class Bind:
@@ -172,6 +186,9 @@ class Bind:
         return isinstance(other, Bind) and \
             self.tmpl == other.tmpl and self.to == other.to
 
+    def __hash__(self):
+        return hash(tuple(['bind', self.tmpl, self.to]))
+
 
 class Production:
     """
@@ -187,3 +204,11 @@ class Production:
     def __repr__(self) -> str:
         return (repr(self.lhs) + " --> Add:" + repr(self.add_effects) + " Del:"
                 + repr(self.del_effects))
+
+    def __eq__(self, other: object) -> bool:
+        return (isinstance(other, Production) and self.lhs == other.lhs and
+                self.add_effects == other.add_effects and self.del_effects ==
+                other.del_effects)
+
+    def __hash__(self):
+        return hash(tuple(self.lhs))

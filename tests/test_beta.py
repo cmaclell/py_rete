@@ -200,6 +200,8 @@ def test_multi_productions():
     assert p2.items[0].wmes == [wmes[0], wmes[4], wmes[7], wmes[8]]
 
     net.remove_production(p2)
+
+    print(type(p2))
     assert len(p2.items) == 0
 
 

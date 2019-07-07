@@ -47,15 +47,14 @@ class Network:
         self.alpha_hash: Dict[Tuple[str, str, str], AlphaMemory] = {}
         self.beta_root = ReteNode()
         self.buf = None
-        self.productions: dict[Production, PNode] = {}
+        self.pnodes: List[PNode] = []
         self.working_memory: Set[WME] = set([])
 
     @property
-    def matches(self) -> Generator[Tuple[Production, Token], None, None]:
-        for prod in self.productions:
-            pnode = self.productions[prod]
+    def matches(self) -> Generator[Token, None, None]:
+        for pnode in self.pnodes:
             for t in pnode.items:
-                yield (prod, t)
+                yield t
 
     @property
     def wmes(self) -> Set[WME]:
@@ -64,27 +63,26 @@ class Network:
     def add_production(self, prod: Production) -> PNode:
         """
         TODO:
-            - what does this return? A pnode?
+            - Ensure we don't get duplicate productions
 
         :type kwargs:
         :type lhs: Rule
         """
-        if prod in self.productions:
-            return self.productions[prod]
-
         current_node = self.build_or_share_network_for_conditions(
             self.beta_root, prod.lhs, [])
         p_node = self.build_or_share_p(current_node, prod)
-        self.productions[prod] = p_node
+        self.pnodes.append(p_node)
         return p_node
 
-    def remove_production(self, prod: Production):
+    def remove_production(self, pnode: PNode):
         """
         Removes a pnode from the network
         """
-        if prod in self.productions:
-            self.delete_node_and_any_unused_ancestors(self.productions[prod])
-            del self.productions[prod]
+        self.delete_node_and_any_unused_ancestors(pnode)
+        try:
+            self.pnodes.remove(pnode)
+        except ValueError:
+            pass
 
     def add_wme(self, wme) -> None:
         if wme in self.working_memory:
@@ -473,18 +471,18 @@ class Network:
             if node.amem.reference_count == 0:
                 self.delete_alpha_memory(node.amem)
 
-        if not node.left_unlinked:
-            node.parent.children.remove(node)
         if isinstance(node, JoinNode):
+            if not node.left_unlinked:
+                node.parent.children.remove(node)
             node.parent.all_children.remove(node)
             if not node.parent.all_children:
                 self.delete_node_and_any_unused_ancestors(node.parent)
         elif not node.parent.children:
             self.delete_node_and_any_unused_ancestors(node.parent)
 
-        else:
-            for item in node.items:
-                item.delete_token_and_descendents()
-        node.parent.children.remove(node)
-        if not node.parent.children:
-            self.delete_node_and_any_unused_ancestors(node.parent)
+        # else:
+        #     for item in node.items:
+        #         item.delete_token_and_descendents()
+        # node.parent.children.remove(node)
+        # if not node.parent.children:
+        #     self.delete_node_and_any_unused_ancestors(node.parent)

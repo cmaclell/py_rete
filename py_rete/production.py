@@ -187,24 +187,3 @@ class Production:
     def __repr__(self) -> str:
         return (repr(self.lhs) + " --> Add:" + repr(self.add_effects) + " Del:"
                 + repr(self.del_effects))
-
-
-class Activation:
-    """
-    A Production that has been matched, but not necessarily fired.
-    """
-
-    def __init__(self, prod: Production, token: Token):
-        self.prod = prod
-        self.token = token
-
-    def __repr__(self):
-        return repr(self.prod) + " <= " + repr(self.token.all_binding())
-
-    @property
-    def add_effects(self) -> List[WME]:
-        raise NotImplementedError
-
-    @property
-    def del_effects(self) -> List[WME]:
-        raise NotImplementedError

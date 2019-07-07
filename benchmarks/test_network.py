@@ -49,7 +49,7 @@ def test_activation():
     p = Production(AndCond(c0, c1))
     net.add_production(p)
 
-    activations = [p for p in net.activations]
+    activations = [p for p in net.matches]
     assert len(activations) == 0
 
     wmes = [WME('B1', 'on', 'B2'),
@@ -58,12 +58,12 @@ def test_activation():
     for wme in wmes:
         net.add_wme(wme)
 
-    activations = [p for p in net.activations]
+    activations = [p for p in net.matches]
     assert len(activations) == 1
 
     net.remove_wme(wmes[0])
 
-    activations = [p for p in net.activations]
+    activations = [p for p in net.matches]
     assert len(activations) == 0
 
 

@@ -26,7 +26,6 @@ from py_rete.production import Neg
 from py_rete.production import Filter
 from py_rete.production import Bind
 from py_rete.production import Production
-from py_rete.production import Activation
 
 
 class Network:
@@ -48,20 +47,21 @@ class Network:
         self.alpha_hash: Dict[Tuple[str, str, str], AlphaMemory] = {}
         self.beta_root = ReteNode()
         self.buf = None
-        self.pnodes: List[PNode] = []
+        self.productions: dict[Production, PNode] = {}
         self.working_memory: Set[WME] = set([])
 
     @property
-    def activations(self) -> Generator[Activation, None, None]:
-        for pnode in self.pnodes:
+    def matches(self) -> Generator[Tuple[Production, Token], None, None]:
+        for prod in self.productions:
+            pnode = self.productions[prod]
             for t in pnode.items:
-                yield Activation(pnode.production, t)
+                yield (prod, t)
 
     @property
     def wmes(self) -> Set[WME]:
         return self.working_memory
 
-    def add_production(self, prod: Production, **kwargs):
+    def add_production(self, prod: Production) -> PNode:
         """
         TODO:
             - what does this return? A pnode?
@@ -69,18 +69,22 @@ class Network:
         :type kwargs:
         :type lhs: Rule
         """
+        if prod in self.productions:
+            return self.productions[prod]
+
         current_node = self.build_or_share_network_for_conditions(
             self.beta_root, prod.lhs, [])
         p_node = self.build_or_share_p(current_node, prod)
-        self.pnodes.append(p_node)
+        self.productions[prod] = p_node
         return p_node
 
-    def remove_production(self, node):
+    def remove_production(self, prod: Production):
         """
-        TODO:
-            - What is passed in here? a p node?
+        Removes a pnode from the network
         """
-        self.delete_node_and_any_unused_ancestors(node)
+        if prod in self.productions:
+            self.delete_node_and_any_unused_ancestors(self.productions[prod])
+            del self.productions[prod]
 
     def add_wme(self, wme) -> None:
         keys = product([wme.identifier, '*'],
@@ -95,12 +99,6 @@ class Network:
                 self.alpha_hash[key].activation(wme)
 
         self.working_memory.add(wme)
-
-    # def add_wme(self, wme):
-    #     """
-    #     Adds a wme to the memory.
-    #     """
-    #     self.alpha_root.activation(wme)
 
     def remove_wme(self, wme: WME):
         """
@@ -446,12 +444,42 @@ class Network:
                     new_node.left_activation(token, None)
 
     @classmethod
+    def delete_alpha_memory(cls, amem):
+        print("DELETE ALPHA MEMORY NOT IMPLEMENTED")
+        return
+
+    @classmethod
     def delete_node_and_any_unused_ancestors(cls, node):
         """
         :type node: BetaNode
         """
+        if isinstance(node, NccNode):
+            cls.delete_node_and_any_unused_ancestors(node.partner)
+
+        if isinstance(node, (BetaMemory, NegativeNode, NccNode)):
+            for item in node.items:
+                item.delete_token_and_descendents()
+
+        if isinstance(node, NccPartnerNode):
+            for item in node.new_result_buffer:
+                item.delete_token_and_descendents()
+
+        if isinstance(node, (JoinNode, NegativeNode)):
+            if not node.right_unlinked:
+                node.amem.successors.remove(node)
+            node.amem.reference_count -= 1
+            if node.amem.reference_count == 0:
+                cls.delete_alpha_memory(node.amem)
+
+        if not node.left_unlinked:
+            node.parent.children.remove(node)
         if isinstance(node, JoinNode):
-            node.amem.successors.remove(node)
+            node.parent.all_children.remove(node)
+            if not node.parent.all_children:
+                cls.delete_node_and_any_unused_ancestors(node.parent)
+        elif not node.parent.children:
+            cls.delete_node_and_any_unused_ancestors(node.parent)
+
         else:
             for item in node.items:
                 Token.delete_token_and_descendents(item)

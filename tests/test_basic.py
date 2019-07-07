@@ -2,6 +2,18 @@
 from py_rete.production import Cond
 from py_rete.production import Ncc
 from py_rete.common import WME
+from py_rete.common import Token
+
+
+def test_token():
+    tdummy = Token(None, None)
+    t0 = Token(tdummy, WME('B1', 'on', 'B2'))
+
+    assert tdummy.parent is None
+    assert t0.parent == tdummy
+
+    assert tdummy.children == [t0]
+    assert t0.children == []
 
 
 def test_condition_vars():

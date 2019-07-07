@@ -87,12 +87,12 @@ class Network:
             del self.productions[prod]
 
     def add_wme(self, wme) -> None:
+        if wme in self.working_memory:
+            return
+
         keys = product([wme.identifier, '*'],
                        [wme.attribute, '*'],
                        [wme.value, '*'])
-
-        if wme in self.working_memory:
-            return
 
         for key in keys:
             if key in self.alpha_hash:
@@ -108,13 +108,15 @@ class Network:
             am.items.remove(wme)
             if not am.items:
                 for node in am.successors:
-                    if isinstance(node, JoinNode):
+                    if isinstance(node, (JoinNode, NegativeNode)):
                         # TODO fix type error, triggered by negativenode, which
                         # is also a betamemory, it confuses mypy because of
                         # multiple inheritance
                         node.parent.children.remove(node)  # type: ignore
+
         for t in wme.tokens:
             t.delete_token_and_descendents()
+
         for jr in wme.negative_join_results:
             jr.owner.join_results.remove(jr)
             if not jr.owner.join_results:
@@ -194,6 +196,7 @@ class Network:
             return self.alpha_hash[key]
 
         self.alpha_hash[key] = AlphaMemory()
+        self.alpha_hash[key].key = key
 
         for w in self.working_memory:
             if condition.test(w):
@@ -242,8 +245,7 @@ class Network:
                 result.append(t)
         return result
 
-    @classmethod
-    def build_or_share_join_node(cls, parent: BetaMemory, amem: AlphaMemory,
+    def build_or_share_join_node(self, parent: BetaMemory, amem: AlphaMemory,
                                  tests: List[TestAtJoinNode], condition: Cond
                                  ) -> JoinNode:
         """
@@ -272,8 +274,7 @@ class Network:
 
         return node
 
-    @classmethod
-    def build_or_share_negative_node(cls, parent: JoinNode, amem: AlphaMemory,
+    def build_or_share_negative_node(self, parent: JoinNode, amem: AlphaMemory,
                                      tests: List[TestAtJoinNode],
                                      condition: Cond) -> NegativeNode:
         """
@@ -293,7 +294,7 @@ class Network:
 
         amem.reference_count += 1
         node.update_nearest_ancestor_with_same_amem()
-        cls.update_new_node_with_matches_from_above(node)
+        self.update_new_node_with_matches_from_above(node)
         if not node.items:
             amem.successors.remove(node)
 
@@ -325,7 +326,7 @@ class Network:
         for child in parent.children:
             if isinstance(child, PNode):
                 return child
-        node = PNode(prod, None, parent)
+        node = PNode(production=prod, parent=parent)
         parent.children.append(node)
         self.update_new_node_with_matches_from_above(node)
         return node
@@ -417,8 +418,7 @@ class Network:
             conds_higher_up.append(cond)
         return current_node
 
-    @classmethod
-    def update_new_node_with_matches_from_above(cls, new_node):
+    def update_new_node_with_matches_from_above(self, new_node):
         """
         :type new_node: BetaNode
         """
@@ -426,35 +426,36 @@ class Network:
         # called.
         parent = new_node.parent
         if isinstance(parent, BetaMemory):
+            # new_node is a JoinNode?
             for tok in parent.items:
                 new_node.left_activation(token=tok)
         elif isinstance(parent, JoinNode):
+            # new_node is a BetaMemory?
             saved_list_of_children = parent.children
             parent.children = [new_node]
             for item in parent.amem.items:
                 parent.right_activation(item)
             parent.children = saved_list_of_children
         elif isinstance(parent, NegativeNode):
+            # new_node is a JoinNode?
             for token in parent.items:
                 if not token.join_results:
                     new_node.left_activation(token, None)
         elif isinstance(parent, NccNode):
+            # new_node is a JoinNode?
             for token in parent.items:
                 if not token.ncc_results:
                     new_node.left_activation(token, None)
 
-    @classmethod
-    def delete_alpha_memory(cls, amem):
-        print("DELETE ALPHA MEMORY NOT IMPLEMENTED")
-        return
+    def delete_alpha_memory(self, amem):
+        del self.alpha_hash[amem.key]
 
-    @classmethod
-    def delete_node_and_any_unused_ancestors(cls, node):
+    def delete_node_and_any_unused_ancestors(self, node):
         """
         :type node: BetaNode
         """
         if isinstance(node, NccNode):
-            cls.delete_node_and_any_unused_ancestors(node.partner)
+            self.delete_node_and_any_unused_ancestors(node.partner)
 
         if isinstance(node, (BetaMemory, NegativeNode, NccNode)):
             for item in node.items:
@@ -469,20 +470,20 @@ class Network:
                 node.amem.successors.remove(node)
             node.amem.reference_count -= 1
             if node.amem.reference_count == 0:
-                cls.delete_alpha_memory(node.amem)
+                self.delete_alpha_memory(node.amem)
 
         if not node.left_unlinked:
             node.parent.children.remove(node)
         if isinstance(node, JoinNode):
             node.parent.all_children.remove(node)
             if not node.parent.all_children:
-                cls.delete_node_and_any_unused_ancestors(node.parent)
+                self.delete_node_and_any_unused_ancestors(node.parent)
         elif not node.parent.children:
-            cls.delete_node_and_any_unused_ancestors(node.parent)
+            self.delete_node_and_any_unused_ancestors(node.parent)
 
         else:
             for item in node.items:
-                Token.delete_token_and_descendents(item)
+                item.delete_token_and_descendents()
         node.parent.children.remove(node)
         if not node.parent.children:
-            cls.delete_node_and_any_unused_ancestors(node.parent)
+            self.delete_node_and_any_unused_ancestors(node.parent)

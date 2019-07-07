@@ -144,7 +144,8 @@ class JoinNode(ReteNode):
             if self.perform_join_test(token, wme):
                 binding = self.make_binding(wme)
                 for child in self.children:
-                    child.left_activation(token, wme, binding)
+                    child.left_activation(token=token, wme=wme,
+                                          binding=binding)
 
     def perform_join_test(self, token: Token, wme: WME) -> bool:
         """

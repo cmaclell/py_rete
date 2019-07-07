@@ -39,16 +39,6 @@ def test_network_case1():
     net.add_production(Production(AndCond(c0, c1, c2)))
     # end
 
-    am0 = net.build_or_share_alpha_memory(c0)
-    am1 = net.build_or_share_alpha_memory(c1)
-    am2 = net.build_or_share_alpha_memory(c2)
-    dummy_join = am0.successors[0]
-    join_on_value_y = am1.successors[0]
-    join_on_value_z = am2.successors[0]
-    match_c0 = dummy_join.children[0]
-    match_c0c1 = join_on_value_y.children[0]
-    match_c0c1c2 = join_on_value_z.children[0]
-
     wmes = [
         WME('B1', 'on', 'B2'),
         WME('B1', 'on', 'B3'),
@@ -63,6 +53,16 @@ def test_network_case1():
     for wme in wmes:
         net.add_wme(wme)
 
+    am0 = net.build_or_share_alpha_memory(c0)
+    am1 = net.build_or_share_alpha_memory(c1)
+    am2 = net.build_or_share_alpha_memory(c2)
+    dummy_join = am0.successors[0]
+    join_on_value_y = am1.successors[0]
+    join_on_value_z = am2.successors[0]
+    match_c0 = dummy_join.children[0]
+    match_c0c1 = join_on_value_y.children[0]
+    match_c0c1c2 = join_on_value_z.children[0]
+
     assert am0.items == [wmes[0], wmes[1], wmes[3], wmes[7]]
     assert am1.items == [wmes[4], wmes[6]]
     assert am2.items == [wmes[2], wmes[8]]
@@ -75,8 +75,22 @@ def test_network_case1():
     t2 = Token(t1, wmes[8])
     assert match_c0c1c2.items[0] == t2
 
+    print(wmes[0].tokens)
+    print(match_c0.items)
+    print(match_c0c1.items)
+    print(match_c0c1c2.items)
+    print()
+
     net.remove_wme(wmes[0])
+
+    print(wmes[0].tokens)
+    print(match_c0.items)
+    print(match_c0c1.items)
+    print(match_c0c1c2.items)
+
     assert am0.items == [wmes[1], wmes[3], wmes[7]]
+    assert am1.items == [wmes[4], wmes[6]]
+    assert am2.items == [wmes[2], wmes[8]]
     assert len(match_c0.items) == 3
     assert len(match_c0c1.items) == 1
     assert len(match_c0c1c2.items) == 0

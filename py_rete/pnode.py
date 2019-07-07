@@ -1,23 +1,20 @@
 from __future__ import annotations
-from typing import List
 
 from py_rete.common import Token
 from py_rete.production import Production
-from py_rete.beta import ReteNode
+from py_rete.beta import BetaMemory
 
 
-class PNode(ReteNode):
+class PNode(BetaMemory):
     """
     A beta network node that stores the matches for productions.
     """
 
-    def __init__(self, production: Production, children=None, parent=None,
-                 items=None):
+    def __init__(self, production: Production, **kwargs):
         """
         :type items: list of Token
         """
-        super(PNode, self).__init__(children=children, parent=parent)
-        self.items: List[Token] = items if items else []
+        super(PNode, self).__init__(**kwargs)
         self.production = production
 
     def left_activation(self, token, wme, binding=None):

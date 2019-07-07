@@ -104,8 +104,8 @@ class Token:
         return "<Token %s>" % self.wmes
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Token) and \
-            self.parent == other.parent and self.wme == other.wme
+        return (isinstance(other, Token) and self.parent == other.parent and
+                self.wme == other.wme)
 
     def is_root(self) -> bool:
         return not self.parent and not self.wme
@@ -165,11 +165,15 @@ class Token:
         from py_rete.ncc_node import NccPartnerNode
         from py_rete.negative_node import NegativeNode
         from py_rete.beta import BetaMemory
+        from py_rete.pnode import PNode
 
         for child in self.children:
             child.delete_token_and_descendents()
-        if isinstance(self.node, BetaMemory):
+
+        if (isinstance(self.node, (BetaMemory, NegativeNode, PNode)) and not
+                isinstance(self.node, NccPartnerNode)):
             self.node.items.remove(self)
+
         if self.wme:
             self.wme.tokens.remove(self)
         if self.parent:
@@ -179,21 +183,25 @@ class Token:
             if not self.node.items:
                 for bmchild in self.node.children:
                     bmchild.amem.successors.remove(bmchild)
+
         if isinstance(self.node, NegativeNode):
             if not self.node.items:
                 self.node.amem.successors.remove(self.node)
             for jr in self.join_results:
                 jr.wme.negative_join_results.remove(jr)
-        elif isinstance(self.node, NccNode):
+
+        if isinstance(self.node, NccNode):
             for result_tok in self.ncc_results:
                 if result_tok.wme:
                     result_tok.wme.tokens.remove(result_tok)
                 if result_tok.parent:
                     result_tok.parent.children.remove(result_tok)
+
         elif isinstance(self.node, NccPartnerNode):
             self.owner.ncc_results.remove(self)
             if not self.owner.ncc_results and self.node.ncc_node:
                 for bchild in self.node.ncc_node.children:
+                    # TODO what is the None?
                     bchild.left_activation(self.owner, None)
 
 

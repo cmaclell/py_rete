@@ -202,26 +202,6 @@ class Network:
 
         return self.alpha_hash[key]
 
-    # def build_or_share_alpha_memory(self, condition):
-    #     """
-    #     TODO:
-    #         - Implement exhaustive hash-table-lookup (pg. 36).
-
-    #     :type condition: Condition
-    #     :rtype: AlphaMemory
-    #     """
-    #     path = []
-    #     for f in ['identifier', 'attribute', 'value']:
-    #         v = getattr(condition, f)
-    #         if not is_var(v):
-    #             path.append((f, v))
-    #     am = ConstantTestNode.build_or_share_alpha_memory(
-    #         self.alpha_root, path)
-    #     for w in self.alpha_root.amem.items:
-    #         if condition.test(w):
-    #             am.activation(w)
-    #     return am
-
     @classmethod
     def get_join_tests_from_condition(cls, c: Cond,
                                       earlier_conds: List[Cond]

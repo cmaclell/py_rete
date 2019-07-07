@@ -1,49 +1,23 @@
 # -*- coding: utf-8 -*-
-from py_rete.alpha import ConstantTestNode
 from py_rete.common import WME
+from py_rete.network import Network
+from py_rete.production import Cond
 
 
 def test_root():
-    # (Var('a'), Var('b'), Var('c')
-    root = ConstantTestNode('no-test')
-    path = []
-    am0 = ConstantTestNode.build_or_share_alpha_memory(root, path)
+    # network is root, uses hash
+    net = Network()
+
+    c0 = Cond('a', 'b', 'c')
+    am0 = net.build_or_share_alpha_memory(c0)
     assert am0 is not None
 
-    am1 = ConstantTestNode.build_or_share_alpha_memory(root, path)
+    am1 = net.build_or_share_alpha_memory(c0)
     assert am0 == am1
 
+    assert len(net.alpha_hash) == 1
 
-def test_level1():
-    # (Var('x'), 'on', Var('y'))
-    root = ConstantTestNode('no-test')
-    path = [('attribute', 'on')]
-    ConstantTestNode.build_or_share_alpha_memory(root, path)
-    assert root.children[0].field_to_test == 'attribute'
-    assert root.children[0].field_must_equal == 'on'
-    assert len(path) == 0
+    wme = WME('a', 'b', 'c')
+    net.add_wme(wme)
 
-
-def test_level2():
-    # (Var('x'), 'on', 'table')
-    root = ConstantTestNode('no-test')
-    path = [('attribute', 'on'), ('value', 'table')]
-    ConstantTestNode.build_or_share_alpha_memory(root, path)
-    assert root.children[0].field_to_test == 'attribute'
-    assert root.children[0].children[0].field_to_test == 'value'
-
-    path = [('attribute', 'color'), ('value', 'red')]
-    ConstantTestNode.build_or_share_alpha_memory(root, path)
-    path = [('attribute', 'color'), ('value', 'blue')]
-    ConstantTestNode.build_or_share_alpha_memory(root, path)
-    assert len(root.children[1].children) == 2
-
-
-def test_add_wme():
-    root = ConstantTestNode('no-test')
-    am1 = ConstantTestNode.build_or_share_alpha_memory(root, [('attribute', 'on')])
-    am2 = ConstantTestNode.build_or_share_alpha_memory(root, [('attribute', 'on'), ('value', 'table')])
-
-    root.activation(WME('x', 'on', 'table'))
-    assert len(am1.items) == 1
-    assert len(am2.items) == 1
+    assert len(am0.items) == 1

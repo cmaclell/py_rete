@@ -200,22 +200,39 @@ update the working memory.
 >>>     fact['light_color'] = 'red'
 >>>     wm.update_fact(fact)
 >>> 
->>> wm = WorkingMemory()
->>> wm.add_fact(f1)
->>> wm.add_skill(make_green)
->>> wm.add_skill(make_red)
->>> 
->>> wm.run()
-making green
-making red
-making green
-making red
-...
+>>> light_wm = WorkingMemory()
+>>> light_wm.add_fact(f1)
+>>> light_wm.add_skill(make_green)
+>>> light_wm.add_skill(make_red)
 ```
 
+Once the above fact and skills have been added the working memory can be run.
+```python
+>>> light_wm.run(5)
+making green
+making red
+making green
+making red
+making green
+```
 
+The number passed to run denotes how many rules the working memory should fire
+before terminating.
 
-> :warning: Note that a given skill could potentially fire for every unique match of its conditions!
+In addition to this high-level function for running the working memory, there
+are also some lower-level capabilities that can be used to more closely control
+the rule execution.
+
+For example, you can get all the skill matches.
+```python
+matches = [match for match in light_wm.get_skill_matches()]
+```
+
+You can fire one of the matches.
+```python
+matches[0].fire()
+```
+
 
 [experta]: https://github.com/nilp0inter/experta
 [doorenbos]: http://reports-archive.adm.cs.cmu.edu/anon/1995/CMU-CS-95-113.pdf

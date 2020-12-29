@@ -1,9 +1,6 @@
 # py_rete
 
-[![image][]][travis]
-
-[![image][coveralls-badge]][coveralls-repo]
-
+[![image][]][travis] [![image][coveralls-badge]][coveralls-repo]
 
 ## Introduction
 

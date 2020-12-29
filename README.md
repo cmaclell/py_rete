@@ -90,8 +90,8 @@ Productions also support logical operators to express more complex conditions.
 
 ```python
 @Production(AND(OR(Fact(color='red'),
-              Fact(color='blue')),
-	   NOT(Fact(color='green'))))
+                   Fact(color='blue')),
+	        NOT(Fact(color='green'))))
 def alert_something_complex():
     print("I found something red or blue without any green present")
 ```
@@ -108,7 +108,7 @@ match wildcards, ensure variables are consistent across conditions, and to bind
 variables for functions.
 ```python
 @Production(Fact(firstname='Chris', lastname=V('lastname')) &
-       Fact(first='John', lastname=V('lastname')))
+            Fact(first='John', lastname=V('lastname')))
 def found_relatives(lastname):
     print("I found a pair of relatives with the lastname: {}".format(lastname))
 ```
@@ -119,10 +119,10 @@ positive facts that bind with these variables to be listed in the production bef
 the tests that use them.
 ```python
 @Production(Fact(value=V('a')) &
-       Fact(value=V('b')) &
-       TEST(lambda a, b: a > b) &
-       Fact(value=V('c')) &
-       TEST(lambda b, c: b > c))
+            Fact(value=V('b')) &
+            TEST(lambda a, b: a > b) &
+            Fact(value=V('c')) &
+            TEST(lambda b, c: b > c))
 def three_values(a, b, c):
     print("{} is greater than {} is greater than {}".format(a, b, c))
 ```

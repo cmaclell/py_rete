@@ -34,7 +34,7 @@ Here are a few examples of facts and how they work.
 
 1. *Facts* are a subclass of dict, so you can treat them similar to dictionaries.
 
-```
+```python
 >>> f = Fact(a=1, b=2)
 >>> f['a']
 1
@@ -42,14 +42,14 @@ Here are a few examples of facts and how they work.
 
 2. Similar to dictionaries, *Facts* do not maintain an internal order of items.
 
-```
+```python
 >>> Fact(a=1, b=2)
 Fact(b=2, a=1)
 ```
 
 3. *Facts* extend dictionarieis, so they also support values without keys.
 
-```
+```python
 >>> f = Fact('a', 'b', 'c')
 >>> f[0]
 'a'
@@ -58,7 +58,7 @@ Fact(b=2, a=1)
 4. *Facts* can support mixed positional and named arguments, but positional
    must come before named and named arguments do not get positional references.
 
-```
+```python
 >>> f = Fact('a', 'b', c=3, d=4)
 >>> f[0]
 'a'
@@ -80,7 +80,7 @@ Productions have two components:
 Here is an example of a simple *Production* that binds with all *Facts* that
 have the color red and prints 'There is something red present':
 
-```
+```python
 @Production(Fact(color='red'))
 def something_red_present():
     print("There is something red present")

@@ -78,13 +78,41 @@ Productions have two components:
   function being passed the bindings from pattern matching variables.
 
 Here is an example of a simple *Production* that binds with all *Facts* that
-have the color red and prints 'There is something red present':
+have the color red and prints 'I found something red':
 
 ```python
 @Production(Fact(color='red'))
-def something_red_present():
-    print("There is something red present")
+def alert_something_red():
+    print("I found something red")
 ```
+
+Productions also support logical operators to express more complex conditions.
+
+```python
+@Production(AND(OR(Fact(color='red'),
+		   Fact(color='blue')),
+		NOT(Fact(color='green'))))
+def alert_something_complex():
+    print("I found something red or blue without any green present")
+```
+
+Bitwise logical operators can be used as shorthand to make composing complex conditions easier.
+```python
+@Production((Fact(color='red') | Fact(color='blue')) & ~Fact(color='green'))
+def alert_something_complex():
+    print("I found something red or blue without any green present")
+```
+
+In addition to matching simple facts, pattern matching variables can be used to
+match wildcards, ensure variables are consistent across conditions, and to bind
+variables for functions.
+```python
+@Production(Fact(firstname='Chris', lastname=V('lastname')) &
+	    Fact(first='John', lastname=V('lastname')))
+def found_relatives(lastname):
+    print("I found a pair of relatives with the lastname: {}".format(lastname))
+```
+
 
 
 [experta]: https://github.com/nilp0inter/experta

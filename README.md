@@ -1,6 +1,6 @@
 # py_rete
 
-[![image][]][travis] [![image][coveralls-badge]][coveralls-repo]
+[![Build Status](https://travis-ci.com/cmaclell/py_rete.svg?branch=master)](https://travis-ci.com/cmaclell/py_rete) [![Coverage Status](https://coveralls.io/repos/github/cmaclell/py_rete/badge.svg?branch=master)](https://coveralls.io/github/cmaclell/py_rete?branch=master)
 
 ## Introduction
 
@@ -233,10 +233,5 @@ You can fire one of the matches.
 matches[0].fire()
 ```
 
-
 [experta]: https://github.com/nilp0inter/experta
 [doorenbos]: http://reports-archive.adm.cs.cmu.edu/anon/1995/CMU-CS-95-113.pdf
-[image]: https://travis-ci.com/cmaclell/py_rete.svg?branch=master
-[travis]: https://travis-ci.com/cmaclell/py_rete
-[coveralls-badge]: https://coveralls.io/repos/github/cmaclell/py_rete/badge.svg?branch=master
-[coveralls-repo]: https://coveralls.io/github/cmaclell/py_rete?branch=master

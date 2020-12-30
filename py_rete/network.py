@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from typing import Generator
 from typing import Dict
 from typing import Tuple
@@ -115,13 +114,9 @@ class ReteNetwork:
     def wmes(self) -> Set[WME]:
         return self.working_memory
 
-    def add_production(self, prod: Production) -> PNode:
+    def add_production(self, prod: Production) -> None:
         """
-        TODO:
-            - Ensure we don't get duplicate productions
-
-        :type kwargs:
-        :type lhs: Rule
+        Adds a production to the ReteNetwork.
         """
         if prod.id is not None:
             raise ValueError("Production already has an id, cannot add")
@@ -130,12 +125,14 @@ class ReteNetwork:
         self.production_counter += 1
         self.productions.add(prod)
 
-        current_node = self.build_or_share_network_for_conditions(
-            self.beta_root, prod.get_rete_conds(), [])
-        p_node = self.build_or_share_p(current_node, prod)
+        for conds in prod.get_rete_conds():
+            current_node = self.build_or_share_network_for_conditions(
+                self.beta_root, conds, [])
+            p_node = self.build_or_share_p(current_node, prod)
 
-        self.pnodes.append(p_node)
-        prod.p_nodes.append(p_node)
+            self.pnodes.append(p_node)
+            prod.p_nodes.append(p_node)
+
         return p_node
 
     def remove_production(self, prod: Production):

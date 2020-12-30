@@ -6,24 +6,40 @@ from py_rete.common import V
 
 if TYPE_CHECKING:
     from typing import List
+    from typing import Union
     from typing import Tuple
     from typing import Callable
-    from typing import Any
+    from typing import Hashable
     from py_rete.common import WME
 
 
-class BaseCond(tuple):
-    """Base Conditional"""
+class ConditionalElement():
+    """
+    A single conditional element (e.g., Test, Condition, Neg, Bind). Does not
+    include list conditionals. Used for type checking primarily.
+    """
+    pass
 
-    def __new__(cls, *args):
+
+class ConditionalList(tuple):
+    """
+    A conditional that consists of a list of other conditionals.
+    """
+
+    def __new__(cls, *args: List[Union[ConditionalList, ConditionalElement]]):
         return super().__new__(cls, args)
 
     def __repr__(self):
         return "{}{}".format(self.__class__.__name__, super().__repr__())
 
+    def __hash__(self):
+        return hash(tuple([self.__class__.__name__, tuple(self)]))
+
 
 class ComposableCond:
-    """A Mixin for making compositional mixins"""
+    """
+    A Mixin for making a conditional compositional using bitwise operators.
+    """
 
     def __and__(self, other: ComposableCond):
         if isinstance(self, AND) and isinstance(other, AND):
@@ -49,46 +65,38 @@ class ComposableCond:
         return NOT(self)
 
 
-class AND(BaseCond, ComposableCond):
+class AND(ConditionalList, ComposableCond):
     pass
 
 
-class OR(BaseCond, ComposableCond):
+class OR(ConditionalList, ComposableCond):
     pass
 
 
-class NOT(BaseCond, ComposableCond):
+class NOT(ConditionalList, ComposableCond):
     pass
 
 
-class TEST(BaseCond, ComposableCond):
-    pass
+# class EXISTS(ConditionalElement, ComposableCond):
+#     pass
+#
+#
+# class FORALL(ConditionalElement, ComposableCond):
+#     pass
 
 
-class EXISTS(BaseCond, ComposableCond):
-    pass
-
-
-class FORALL(BaseCond, ComposableCond):
-    pass
-
-
-class Cond(ComposableCond):
+class Cond(ConditionalElement, ComposableCond):
     """
     Essentially a pattern/condition to match, can have variables.
     """
 
-    def __init__(self, identifier: Any, attribute: Any, value: Any):
+    def __init__(self, identifier: Hashable, attribute: Hashable,
+                 value: Hashable):
         """
-        Constructor.
+        Specifies a pattern that consists of an identifier, attribute, and
+        value. Note, these should be hashable values.
 
-        (<x> ^self <y>)
-        repr as:
-        ('?x', 'self', '?y')
-
-        :type value: Var or str
-        :type attribute: Var or str
-        :type identifier: Var or str
+        Repr as: (<identifier> ^<attribute> <value>)
         """
         self.identifier = identifier
         self.attribute = attribute
@@ -113,8 +121,6 @@ class Cond(ComposableCond):
     def vars(self) -> List[Tuple[str, V]]:
         """
         Returns a list of variables with the labels for the slots they occupy.
-
-        :rtype: list
         """
         ret = []
         for field in ['identifier', 'attribute', 'value']:
@@ -173,29 +179,12 @@ class Neg(Cond):
                            self.value]))
 
 
-# class AndCond(list):
-#     """
-#     Essentially an AND, a list of conditions.
-#
-#     TODO:
-#         - Implement an OR equivelent, that gets compiled when added to a
-#           network into multiple rules.
-#         - Need somewhere to store right hand sides? What to do when rules
-#         fire.
-#           Might need an actual rule or production class.
-#     """
-#
-#     def __init__(self, *args: List[Cond]) -> None:
-#         self.extend(args)
-
-
-class Ncc(AND):
+class Ncc(ConditionalList, ComposableCond):
     """
     Essentially a negated AND, a negated list of conditions.
     """
-
     def __repr__(self):
-        return "-%s" % super(Ncc, self).__repr__()
+        return "-{}".format(super(Ncc, self).__repr__())
 
     @property
     def number_of_conditions(self) -> int:
@@ -205,7 +194,7 @@ class Ncc(AND):
         return hash(tuple(['ncc', tuple(self)]))
 
 
-class Filter:
+class Filter(ConditionalElement, ComposableCond):
     """
     This is a test, it includes a code snippit that might include variables.
     When employed in rete, it replaces the variables, then executes the code.
@@ -224,21 +213,19 @@ class Filter:
         return hash(tuple(['filter', self.tmpl]))
 
 
-class Bind:
+class Bind(ConditionalElement, ComposableCond):
     """
     This node binds the result of a code evaluation to a variable, which can
     then be used in subsequent patterns.
-
-    TODO:
-        - Could these use some form of partials to eliminate the need to do
-          find replace for variable? Maybe save an arglist of vars and a
-          partial that accepts bound values for the arg list. Could be faster.
     """
 
-    def __init__(self, tmp: str, to: str):
+    def __init__(self, tmp: Callable, to: V):
         self.tmpl = tmp
         self.to = to
         assert isinstance(self.to, V)
+
+    def __repr__(self):
+        return "Bind({},{})".format(repr(self.tmpl), repr(self.to))
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Bind) and \

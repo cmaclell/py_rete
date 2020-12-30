@@ -1,27 +1,68 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from itertools import product
 from functools import update_wrapper
 import inspect
 
-from py_rete.conditions import BaseCond
+from py_rete.conditions import ConditionalList
+from py_rete.conditions import ConditionalElement
 from py_rete.conditions import Cond
 from py_rete.conditions import Ncc
+from py_rete.conditions import Neg
+from py_rete.conditions import NOT
 from py_rete.conditions import Filter
 from py_rete.conditions import Bind
 from py_rete.conditions import AND
+from py_rete.conditions import OR
 from py_rete.fact import Fact
 
 if TYPE_CHECKING:
     from typing import Optional
     from typing import Callable
     from typing import List
+    from typing import Union
     from py_rete.pnode import PNode
+
+
+def compile_disjuncts(it, nest=True):
+    if isinstance(it, OR):
+        return tuple(compile_disjuncts(ele, nest=False) for ele in it)
+    elif isinstance(it, (Production, AND)):
+        inner = []
+        for ele in it:
+            if isinstance(ele, NOT):
+                inner += compile_disjuncts(ele)
+            else:
+                inner.append(compile_disjuncts(ele))
+        return tuple(product(*inner))
+    elif isinstance(it, NOT):
+        if len(it) > 1:
+            inner = compile_disjuncts(AND(*[ele for ele in it]))
+        else:
+            inner = compile_disjuncts(it[0])
+        print('inner', inner)
+        return (tuple(NOT(*branch) for branch in inner),)
+    elif nest:
+        return (it,)
+    else:
+        return it
 
 
 def get_rete_conds(it):
     for ele in it:
-        if isinstance(ele, (Cond, Ncc, Bind, Filter)):
+        if isinstance(ele, (Cond, Bind, Filter)):
             yield ele
+        elif isinstance(ele, NOT):
+            subcond = list(get_rete_conds(ele))
+            if len(subcond) == 1 and isinstance(subcond[0], Cond):
+                yield Neg(subcond[0].identifier,
+                          subcond[0].attribute,
+                          subcond[0].value)
+            elif len(subcond) == 1 and isinstance(subcond[0], AND):
+                yield Ncc(**subcond[0])
+            else:
+                yield Ncc(*subcond)
+
         elif isinstance(ele, Fact):
             for cond in ele.conds:
                 yield cond
@@ -30,7 +71,7 @@ def get_rete_conds(it):
                 yield cond
 
 
-class Production(BaseCond):
+class Production():
     """
     A production rule in py_rete. It is comprised of conditions and a function
     to execute once all conditions are bound.
@@ -44,17 +85,16 @@ class Production(BaseCond):
     __wrapped__: Optional[Callable]
     id: Optional[str]
     p_nodes: List[PNode]
+    conditions: Union[ConditionalElement, ConditionalList]
 
-    def __new__(cls, *args):
-        obj = super().__new__(cls, *args)
-        obj.__wrapped__ = None
-        obj._wrapped_args = []
-        obj._rete_net = None
+    def __init__(self, pattern: Union[ConditionalElement, ConditionalList]):
+        self.__wrapped__ = None
+        self._wrapped_args = []
+        self._rete_net = None
+        self.pattern = pattern
 
-        obj.id = None
-        obj.p_nodes = []
-
-        return obj
+        self.id = None
+        self.p_nodes = []
 
     @property
     def activations(self):
@@ -63,7 +103,11 @@ class Production(BaseCond):
                 yield token
 
     def get_rete_conds(self):
-        return list(get_rete_conds(self))
+        disjuncts = compile_disjuncts(self.pattern)
+        print(disjuncts)
+        return [list(get_rete_conds(AND(*disjunct)))
+                if isinstance(disjunct, tuple) else
+                list(get_rete_conds(AND(disjunct))) for disjunct in disjuncts]
 
     def __call__(self, *args, **kwargs):
 
@@ -110,7 +154,7 @@ class Production(BaseCond):
             raise ValueError("Not instantiated as a decorator.")
 
         signature = inspect.signature(self.__wrapped__)
-        return "IF {} THEN {}{}".format(self[0].__repr__(),
+        return "IF {} THEN {}{}".format(self.pattern.__repr__(),
                                         self.__wrapped__.__name__,
                                         signature)
 

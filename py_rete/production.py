@@ -1,5 +1,5 @@
 from __future__ import annotations
-# from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING
 from functools import update_wrapper
 import inspect
 
@@ -11,8 +11,11 @@ from py_rete.conditions import Bind
 from py_rete.conditions import AND
 from py_rete.fact import Fact
 
-# if TYPE_CHECKING:
-#     from py_rete.common import Token
+if TYPE_CHECKING:
+    from typing import Optional
+    from typing import Callable
+    from typing import List
+    from py_rete.pnode import PNode
 
 
 def get_rete_conds(it):
@@ -38,9 +41,13 @@ class Production(BaseCond):
           ever have empty effects? Maybe ok, if they have more complicated
           effects.
     """
+    __wrapped__: Optional[Callable]
+    id: Optional[str]
+    p_nodes: List[PNode]
 
     def __new__(cls, *args):
         obj = super().__new__(cls, *args)
+        obj.__wrapped__ = None
         obj._wrapped_args = []
         obj._rete_net = None
 
@@ -61,7 +68,7 @@ class Production(BaseCond):
     def __call__(self, *args, **kwargs):
 
         # Need to see if we've already wrapped a function, if not, then do so.
-        if not hasattr(self, "__wrapped__"):
+        if self.__wrapped__ is None:
             if not args:
                 raise AttributeError("Apply Production as a decorator around a"
                                      " function to create a production.")
@@ -99,6 +106,9 @@ class Production(BaseCond):
             return result
 
     def __repr__(self) -> str:
+        if self.__wrapped__ is None:
+            raise ValueError("Not instantiated as a decorator.")
+
         signature = inspect.signature(self.__wrapped__)
         return "IF {} THEN {}{}".format(self[0].__repr__(),
                                         self.__wrapped__.__name__,

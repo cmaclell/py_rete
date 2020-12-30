@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from typing import Any
     from typing import List
     from typing import Optional
     from py_rete.alpha import AlphaMemory
@@ -52,7 +53,7 @@ class WME:
         - Add tests to raise exception in the presence of variables.
     """
 
-    def __init__(self, identifier: str, attribute: str, value: str) -> None:
+    def __init__(self, identifier: Any, attribute: Any, value: Any) -> None:
         """
         identifier, attribute, and value are all strings, if they start with a
         $ then they are a variable.

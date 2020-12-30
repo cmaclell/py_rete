@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from typing import List
     from typing import Tuple
     from typing import Callable
+    from typing import Any
     from py_rete.common import WME
 
 
@@ -77,7 +78,7 @@ class Cond(ComposableCond):
     Essentially a pattern/condition to match, can have variables.
     """
 
-    def __init__(self, identifier: str, attribute: str, value: str):
+    def __init__(self, identifier: Any, attribute: Any, value: Any):
         """
         Constructor.
 
@@ -109,7 +110,7 @@ class Cond(ComposableCond):
                            self.value]))
 
     @property
-    def vars(self) -> List[Tuple[str, str]]:
+    def vars(self) -> List[Tuple[str, V]]:
         """
         Returns a list of variables with the labels for the slots they occupy.
 
@@ -122,7 +123,7 @@ class Cond(ComposableCond):
                 ret.append((field, v))
         return ret
 
-    def contain(self, v: str) -> str:
+    def contain(self, v: V) -> str:
         """
         Checks if a variable is in a pattern. Returns field if it is, otherwise
         an empty string.

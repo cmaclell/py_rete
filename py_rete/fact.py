@@ -10,12 +10,13 @@ from py_rete.common import V
 
 if TYPE_CHECKING:
     from typing import Generator
+    from typing import Optional
 
 
 class Fact(dict, ComposableCond):
 
     def __init__(self, *args, **kwargs) -> None:
-        self.id = None
+        self.id: Optional[str] = None
         self.gen_var = gen_variable()
 
         self.update(dict(chain(enumerate(args), kwargs.items())))

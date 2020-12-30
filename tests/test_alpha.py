@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from py_rete.common import WME
 from py_rete.network import ReteNetwork
 from py_rete.conditions import Cond

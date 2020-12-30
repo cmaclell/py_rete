@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Tuple
 from typing import List
 from typing import Set
+from typing import Union
 from itertools import product
 
 from py_rete.bind_node import BindNode
@@ -430,7 +431,8 @@ class ReteNetwork:
         parent.children.append(node)
         return node
 
-    def build_or_share_network_for_conditions(self, parent, rule: List[Cond],
+    def build_or_share_network_for_conditions(self, parent,
+                                              rule: Union[Ncc, List[Cond]],
                                               earlier_conds: List[Cond]):
         """
         :type earlier_conds: list of BaseCondition

@@ -1,4 +1,7 @@
+import inspect
+
 from py_rete.beta import ReteNode
+from py_rete.common import V
 
 
 class FilterNode(ReteNode):
@@ -26,12 +29,15 @@ class FilterNode(ReteNode):
         :type wme: WME
         :type token: Token
         """
-        code = self.tmpl
+        func = self.tmpl
         all_binding = token.all_binding()
         all_binding.update(binding)
-        for k in all_binding:
-            code = code.replace(k, str(all_binding[k]))
-        result = eval(code)
+
+        args = inspect.getfullargspec(func)[0]
+        args = {arg: all_binding[V(arg)] for arg in args}
+
+        result = func(**args)
+
         if bool(result):
             for child in self.children:
                 child.left_activation(token, wme, binding)

@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
-from py_rete.production import AndCond
-from py_rete.production import Cond
-from py_rete.production import Neg
-from py_rete.production import Filter
-from py_rete.production import Bind
-from py_rete.production import Ncc
+from py_rete.conditions import AND
+from py_rete.conditions import Cond
+from py_rete.conditions import Neg
+from py_rete.conditions import Filter
+from py_rete.conditions import Bind
+from py_rete.conditions import Ncc
+from py_rete.common import V
 
 
 def parse_json(s):
@@ -19,8 +19,8 @@ def parse_xml(s):
     root = ET.fromstring(s)
     result = []
     for production in root:
-        lhs = AndCond()
-        lhs.extend(parsing(production[0]))
+        lhs = AND(parsing(production[0]))
+        # lhs.extend(parsing(production[0]))
         rhs = production[1].attrib
         result.append((lhs, rhs))
     return result
@@ -37,9 +37,8 @@ def parsing(root):
             out.append(Filter(cond.text))
         elif cond.tag == 'bind':
             to = cond.attrib.get('to')
-            out.append(Bind(cond.text, to))
+            out.append(Bind(cond.text, V(to)))
         elif cond.tag == 'ncc':
-            n = Ncc()
-            n.extend(parsing(cond))
+            n = Ncc(parsing(cond))
             out.append(n)
     return out

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from py_rete.common import WME
-from py_rete.network import Network
-from py_rete.production import Cond
+from py_rete.network import ReteNetwork
+from py_rete.conditions import Cond
 
 
 def test_root():
     # network is root, uses hash
-    net = Network()
+    net = ReteNetwork()
 
     c0 = Cond('a', 'b', 'c')
     am0 = net.build_or_share_alpha_memory(c0)

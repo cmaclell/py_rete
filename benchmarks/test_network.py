@@ -1,48 +1,52 @@
-# -*- coding: utf-8 -*-
-from py_rete.production import Bind
-from py_rete.production import Cond
-from py_rete.production import AndCond
-from py_rete.production import Effect
-from py_rete.production import AndEffect
+# from py_rete.production import Bind
+from py_rete.conditions import Cond
+from py_rete.conditions import AND
 from py_rete.production import Production
 from py_rete.common import WME
-from py_rete.network import Network
+from py_rete.common import V
+from py_rete.network import ReteNetwork
 
 
 def init_network():
-    net = Network()
-    c0 = Cond('$x', 'on', '$y')
-    c1 = Cond('$y', 'left-of', '$z')
-    c2 = Cond('$z', 'color', 'red')
-    net.add_production(Production('Test', AndCond(c0, c1, c2)))
+    net = ReteNetwork()
+    c0 = Cond(V('x'), 'on', V('y'))
+    c1 = Cond(V('y'), 'left-of', V('z'))
+    c2 = Cond(V('z'), 'color', 'red')
+
+    @Production(AND(c0, c1, c2))
+    def test():
+        pass
+
+    net.add_production(test)
+
     return net
 
 
-def test_fire():
-    fire_counting()
+# def test_fire():
+#     fire_counting()
 
 
-def fire_counting():
-    net = Network()
-    c0 = Cond('$node', 'number', '$x')
-    c1 = Bind('str($x + 1)', '$y')
-    e0 = Effect('$node', 'number', '$y')
-    p0 = Production('add1', AndCond(c0, c1), AndEffect(e0))
-    w0 = WME('root', 'number', '1')
+# def fire_counting():
+#     net = Network()
+#     c0 = Cond('?node', 'number', '?x')
+#     c1 = Bind('str(?x + 1)', '?y')
+#     e0 = Effect('?node', 'number', '?y')
+#     p0 = Production('add1', AND(c0, c1), AndEffect(e0))
+#     w0 = WME('root', 'number', '1')
+#
+#     net.add_production(p0)
+#     assert len(net.wmes) == 0
+#
+#     net.add_wme(w0)
+#     assert len(net.wmes) == 1
+#
+#     for i in range(10):
+#         net.fire_all()
+#         assert len(net.wmes) == i+2
 
-    net.add_production(p0)
-    assert len(net.wmes) == 0
 
-    net.add_wme(w0)
-    assert len(net.wmes) == 1
-
-    for i in range(10):
-        net.fire_all()
-        assert len(net.wmes) == i+2
-
-
-def test_fire_counting(benchmark):
-    benchmark(fire_counting)
+# def test_fire_counting(benchmark):
+#     benchmark(fire_counting)
 
 
 def add_wmes():
@@ -73,10 +77,14 @@ def test_add_wmes(benchmark):
 
 
 def test_activation():
-    net = Network()
-    c0 = Cond('$x', 'on', '$y')
-    c1 = Cond('$y', 'color', 'red')
-    p = Production('test', AndCond(c0, c1))
+    net = ReteNetwork()
+    c0 = Cond(V('x'), 'on', V('y'))
+    c1 = Cond(V('y'), 'color', 'red')
+
+    @Production(AND(c0, c1))
+    def p():
+        pass
+
     net.add_production(p)
 
     activations = [p for p in net.matches]
@@ -88,6 +96,9 @@ def test_activation():
     for wme in wmes:
         net.add_wme(wme)
 
+    print(net.working_memory)
+    print(net)
+
     activations = [p for p in net.matches]
     assert len(activations) == 1
 
@@ -98,7 +109,7 @@ def test_activation():
 
 
 def test_facts():
-    net = Network()
+    net = ReteNetwork()
 
     wmes = [e for e in net.wmes]
     assert len(wmes) == 0

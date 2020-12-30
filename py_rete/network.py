@@ -16,19 +16,20 @@ from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
 from py_rete.common import WME
 from py_rete.common import Token
+from py_rete.common import V
+from py_rete.fact import Fact
 from py_rete.alpha import AlphaMemory
 from py_rete.beta import ReteNode
 from py_rete.beta import BetaMemory
-from py_rete.production import Cond
-from py_rete.production import Ncc
-from py_rete.production import is_var
-from py_rete.production import Neg
-from py_rete.production import Filter
-from py_rete.production import Bind
+from py_rete.conditions import Cond
+from py_rete.conditions import Ncc
+from py_rete.conditions import Neg
+from py_rete.conditions import Filter
+from py_rete.conditions import Bind
 from py_rete.production import Production
 
 
-class Network:
+class ReteNetwork:
     """
     TODO:
         - Add a top level function to get teh current set of productions that
@@ -45,7 +46,11 @@ class Network:
         self.beta_root = ReteNode()
         self.buf = None
         self.pnodes: List[PNode] = []
-        self.working_memory: Set[WME] = set([])
+        self.working_memory: Set[WME] = set()
+        self.facts: Set[Fact] = set()
+        self.fact_counter = 0
+        self.production_counter = 0
+        self.productions: Set[Production] = set()
 
     def fire_all(self):
         effects = []
@@ -53,6 +58,45 @@ class Network:
             effects += prod.get_effects(t)
         for e in effects:
             self.add_wme(e)
+
+    def __repr__(self):
+        output = "Facts:\n"
+        for f in self.facts:
+            output += "{}: {}\n".format(f.id, f)
+        output += '\nProductions:\n'
+        for p in self.productions:
+            output += "{}: {}\n".format(p.id, p)
+        return output
+
+    def add_fact(self, fact: Fact) -> None:
+        """
+        Adds a fact to the network.
+        """
+        if fact.id is not None:
+            raise ValueError("Fact already has an id, cannot add")
+
+        fact.id = "f-{}".format(self.fact_counter)
+        self.fact_counter += 1
+
+        self.facts.add(fact)
+
+        for wme in fact.wmes:
+            self.add_wme(wme)
+
+    def remove_fact(self, fact: Fact) -> None:
+        """
+        Removes a fact from the network.
+        """
+        if fact.id is None:
+            raise ValueError("Fact has no id, cannot remove.")
+
+        # Remove fact
+        self.facts.remove(fact)
+
+        for wme in fact.wmes:
+            self.remove_wme(wme)
+
+        fact.id = None
 
     @property
     def new_matches(self) -> Generator[Tuple[Production, Token], None, None]:
@@ -62,8 +106,9 @@ class Network:
 
     @property
     def matches(self) -> Generator[Tuple[Production, Token], None, None]:
+        print(self.pnodes)
         for pnode in self.pnodes:
-            for t in pnode.items:
+            for t in pnode.activations:
                 yield (pnode.production, t)
 
     @property
@@ -78,21 +123,37 @@ class Network:
         :type kwargs:
         :type lhs: Rule
         """
+        if prod.id is not None:
+            raise ValueError("Production already has an id, cannot add")
+
+        prod.id = "p-{}".format(self.production_counter)
+        self.production_counter += 1
+        self.productions.add(prod)
+
         current_node = self.build_or_share_network_for_conditions(
-            self.beta_root, prod.lhs, [])
+            self.beta_root, prod.get_rete_conds(), [])
         p_node = self.build_or_share_p(current_node, prod)
+
         self.pnodes.append(p_node)
+        prod.p_nodes.append(p_node)
         return p_node
 
-    def remove_production(self, pnode: PNode):
+    def remove_production(self, prod: Production):
         """
         Removes a pnode from the network
         """
-        self.delete_node_and_any_unused_ancestors(pnode)
-        try:
+        if prod.id is None:
+            raise ValueError("Production has no id, cannot remove.")
+
+        # Remove fact
+        self.productions.remove(prod)
+
+        for pnode in prod.p_nodes:
+            self.delete_node_and_any_unused_ancestors(pnode)
             self.pnodes.remove(pnode)
-        except ValueError:
-            pass
+
+        prod.id = None
+        prod.p_nodes = []
 
     def add_wme(self, wme) -> None:
         if wme in self.working_memory:
@@ -191,11 +252,11 @@ class Network:
         attr_test = '*'
         value_test = '*'
 
-        if not is_var(condition.identifier):
+        if not isinstance(condition.identifier, V):
             id_test = condition.identifier
-        if not is_var(condition.attribute):
+        if not isinstance(condition.attribute, V):
             attr_test = condition.attribute
-        if not is_var(condition.value):
+        if not isinstance(condition.value, V):
             value_test = condition.value
 
         key = (id_test, attr_test, value_test)
@@ -244,7 +305,7 @@ class Network:
         :rtype: JoinNode
         """
         for child in parent.all_children:
-            # maybe use isinstance(child, JoinNode)
+            # TODO maybe use isinstance(child, JoinNode)
             if (type(child) == JoinNode and child.amem == amem and
                     child.tests == tests and child.condition == condition):
                 return child

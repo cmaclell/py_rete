@@ -1,58 +1,82 @@
-# -*- coding: utf-8 -*-
 from py_rete.production import Production
-from py_rete.production import Cond
-from py_rete.production import AndCond
-from py_rete.production import Filter
-from py_rete.production import Bind
-from py_rete.network import Network
+from py_rete.conditions import Cond
+from py_rete.conditions import AND
+from py_rete.conditions import Filter
+from py_rete.conditions import Bind
+from py_rete.network import ReteNetwork
 from py_rete.common import WME
+from py_rete.common import V
 
 
 def test_filter_compare():
-    net = Network()
-    c0 = Cond('spu:1', 'price', '$x')
-    f0 = Filter('$x>100')
-    f1 = Filter('$x<200')
-    f2 = Filter('$x>200 and $x<400')
-    f3 = Filter('$x>300')
+    net = ReteNetwork()
+    c0 = Cond('spu:1', 'price', V('x'))
+    f0 = Filter(lambda x: x > 100)
+    f1 = Filter(lambda x: x < 200)
+    f2 = Filter(lambda x: x > 200 and x < 400)
+    f3 = Filter(lambda x: x > 300)
 
-    p0 = net.add_production(Production("test0", AndCond(c0, f0, f1)))
-    p1 = net.add_production(Production("test1", AndCond(c0, f2)))
-    p2 = net.add_production(Production("test2", AndCond(c0, f3)))
-    net.add_wme(WME('spu:1', 'price', '100'))
-    net.add_wme(WME('spu:1', 'price', '150'))
-    net.add_wme(WME('spu:1', 'price', '300'))
+    @Production(AND(c0, f0, f1))
+    def p0():
+        pass
+    net.add_production(p0)
 
-    assert len(p0.items) == 1
-    token = p0.items.pop()
-    assert token.get_binding('$x') == '150'
+    @Production(AND(c0, f2))
+    def p1():
+        pass
+    net.add_production(p1)
 
-    assert len(p1.items) == 1
-    token = p1.items.pop()
-    assert token.get_binding('$x') == '300'
+    @Production(AND(c0, f3))
+    def p2():
+        pass
+    net.add_production(p2)
 
-    assert not p2.items
+    net.add_wme(WME('spu:1', 'price', 100))
+    net.add_wme(WME('spu:1', 'price', 150))
+    net.add_wme(WME('spu:1', 'price', 300))
+
+    assert len(list(p0.activations)) == 1
+    token = list(p0.activations)[0]
+    assert token.get_binding(V('x')) == 150
+
+    assert len(list(p1.activations)) == 1
+    token = list(p1.activations)[0]
+    assert token.get_binding(V('x')) == 300
+
+    assert len(list(p2.activations)) == 0
 
 
 def test_bind():
-    net = Network()
-    c0 = Cond('spu:1', 'sales', '$x')
-    b0 = Bind('len(set($x) & set(range(1, 100)))', '$num')
-    f0 = Filter('$num > 0')
-    p0 = net.add_production(Production('test0', AndCond(c0, b0, f0)))
+    net = ReteNetwork()
+    c0 = Cond('spu:1', 'sales', V('x'))
+    b0 = Bind(lambda x: len(set(x) & set(range(1, 100))), V('num'))
+    f0 = Filter(lambda num: num > 0)
 
-    b1 = Bind('len(set($x) & set(range(100, 200)))', '$num')
-    p1 = net.add_production(Production('test1', AndCond(c0, b1, f0)))
+    @Production(AND(c0, b0, f0))
+    def p0():
+        pass
+    net.add_production(p0)
 
-    b2 = Bind('len(set($x) & set(range(300, 400)))', '$num')
-    p2 = net.add_production(Production('test2', AndCond(c0, b2, f0)))
+    b1 = Bind(lambda x: len(set(x) & set(range(100, 200))), V('num'))
 
-    net.add_wme(WME('spu:1', 'sales', 'range(50, 110)'))
+    @Production(AND(c0, b1, f0))
+    def p1():
+        pass
+    net.add_production(p1)
 
-    assert len(p0.items) == 1
-    assert len(p1.items) == 1
-    assert len(p2.items) == 0
-    t0 = p0.items[0]
-    t1 = p1.items[0]
-    assert t0.get_binding('$num') == 50
-    assert t1.get_binding('$num') == 10
+    b2 = Bind(lambda x: len(set(x) & set(range(300, 400))), V('num'))
+
+    @Production(AND(c0, b2, f0))
+    def p2():
+        pass
+    net.add_production(p2)
+
+    net.add_wme(WME('spu:1', 'sales', range(50, 110)))
+
+    assert len(list(p0.activations)) == 1
+    assert len(list(p1.activations)) == 1
+    assert len(list(p2.activations)) == 0
+    t0 = list(p0.activations)[0]
+    t1 = list(p1.activations)[0]
+    assert t0.get_binding(V('num')) == 50
+    assert t1.get_binding(V('num')) == 10

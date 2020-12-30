@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     TODO:
         - Why is fields at the top? is it mutable?
@@ -14,8 +13,33 @@ if TYPE_CHECKING:
     from py_rete.beta import ReteNode
 
 
-def is_var(v):
-    return isinstance(v, str) and v.startswith('$')
+variable_counter = 0
+
+
+def gen_variable():
+    global variable_counter
+    variable_counter += 1
+    return V('genvar{}'.format(variable_counter))
+
+
+class V():
+    """
+    A variable for pattern matching.
+    """
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return "V({})".format(self.name)
+
+    def __hash__(self):
+        return hash("V({})".format(self.name))
+
+    def __eq__(self, other):
+        if not isinstance(other, V):
+            return False
+        return self.name == other.name
 
 
 class WME:
@@ -37,9 +61,9 @@ class WME:
         :type attribute: str
         :type value: str
         """
-        assert not is_var(identifier)
-        assert not is_var(attribute)
-        assert not is_var(value)
+        assert not isinstance(identifier, V)
+        assert not isinstance(attribute, V)
+        assert not isinstance(value, V)
 
         self.identifier = identifier
         self.attribute = attribute
@@ -126,7 +150,7 @@ class Token:
         TODO:
             - Seems expensive, maybe possible to cache?
         """
-        assert is_var(v)
+        assert isinstance(v, V)
         t = self
         ret = t.binding.get(v)
         while not ret and t.parent:

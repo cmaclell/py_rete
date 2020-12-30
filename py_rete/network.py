@@ -106,7 +106,6 @@ class ReteNetwork:
 
     @property
     def matches(self) -> Generator[Tuple[Production, Token], None, None]:
-        print(self.pnodes)
         for pnode in self.pnodes:
             for t in pnode.activations:
                 yield (pnode.production, t)

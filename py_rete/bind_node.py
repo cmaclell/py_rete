@@ -37,11 +37,20 @@ class BindNode(ReteNode):
     def get_function_result(self, token, wme, binding=None):
         func = self.tmpl
         all_binding = token.all_binding()
-        all_binding.update(binding)
+        if binding:
+            all_binding.update(binding)
 
         args = inspect.getfullargspec(func)[0]
-        args = {arg: self._rete_net if arg == 'net' else all_binding[V(arg)]
-                for arg in args}
+
+        # args = {arg: self._rete_net if arg == 'net' else all_binding[V(arg)]
+        #         for arg in args}
+
+        # binds net and if a variable is bound to a fact id then it gets the
+        # Fact itself
+        args = {arg: self._rete_net if arg == 'net' else
+                self._rete_net.facts[all_binding[V(arg)]] if
+                all_binding[V(arg)] in self._rete_net.facts else
+                all_binding[V(arg)] for arg in args}
 
         return func(**args)
 
@@ -51,6 +60,8 @@ class BindNode(ReteNode):
         :type wme: WME
         :type token: Token
         """
+        if binding is None:
+            binding = {}
         binding[self.bind] = self.get_function_result(token, wme, binding)
 
         for child in self.children:

@@ -27,7 +27,7 @@ class FilterNode(ReteNode):
         """
         super(FilterNode, self).__init__(children=children, parent=parent)
         self.tmpl = tmpl
-        self._rete_net = None
+        self._rete_net = rete
 
     def get_function_result(self, token, wme, binding=None):
         func = self.tmpl
@@ -35,8 +35,13 @@ class FilterNode(ReteNode):
         all_binding.update(binding)
 
         args = inspect.getfullargspec(func)[0]
-        args = {arg: self._rete_net if arg == 'net' else all_binding[V(arg)]
-                for arg in args}
+
+        # binds net and if a variable is bound to a fact id then it gets the
+        # Fact itself
+        args = {arg: self._rete_net if arg == 'net' else
+                self._rete_net.facts[all_binding[V(arg)]] if
+                all_binding[V(arg)] in self._rete_net.facts else
+                all_binding[V(arg)] for arg in args}
 
         return func(**args)
 

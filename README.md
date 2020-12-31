@@ -47,7 +47,7 @@ Here are a few examples of facts and how they work.
 Fact(b=2, a=1)
 ```
 
-3. *Facts* extend dictionarieis, so they also support values without keys.
+3. *Facts* extend dictionaries, so they also support values without keys.
 
 ```python
 >>> f = Fact('a', 'b', 'c')
@@ -65,6 +65,17 @@ Fact(b=2, a=1)
 >>> f['c']
 3
 ```
+
+5. *Facts* support nesting with other facts. 
+
+```python
+>>> f = Fact(subfact=Fact())
+Fact(subfact=Fact())
+```
+
+Note that there will be issues if facts contain other data structures that
+contain facts (they will not be properly added to the rete network or to
+productions).
 
 ### Productions
 
@@ -127,7 +138,9 @@ def three_values(a, b, c):
     print("{} is greater than {} is greater than {}".format(a, b, c))
 ```
 
-It is also possible to bind *facts* to variables as well.
+It is also possible to bind *facts* to variables as well. Note, variables bound
+in this way do not get matched against other occurances of the variable. This is
+primarily for binding variables for use in subsequent function calls.
 ```python
 @Production(V('name_fact') << Fact(name=V('name')))
 def found_name(name_fact):

@@ -32,7 +32,7 @@ class Fact(dict, ComposableCond):
             raise ValueError("Can only assign facts to variables")
 
         fact_id_var = self.gen_var
-        func = eval("lambda net, {}: net.get_fact_by_id({})".format(
+        func = eval("lambda {}: {}".format(
             fact_id_var.name, fact_id_var.name))
         # b0 = Bind(lambda: 1+1, V('blah'))
 

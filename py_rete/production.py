@@ -42,7 +42,8 @@ def compile_disjuncts(it, nest=True):
             inner = compile_disjuncts(AND(*[ele for ele in it]))
         else:
             inner = compile_disjuncts(it[0])
-        return (tuple(NOT(*branch) for branch in inner),)
+        return (tuple(NOT(*branch) if isinstance(branch, tuple) else
+                      NOT(branch) for branch in inner),)
     elif nest:
         return (it,)
     else:
@@ -62,11 +63,27 @@ def get_rete_conds(it):
             elif len(subcond) == 1 and isinstance(subcond[0], AND):
                 yield Ncc(**subcond[0])
             else:
+                print(subcond)
                 yield Ncc(*subcond)
 
         elif isinstance(ele, Fact):
-            for cond in ele.conds:
+            copy = ele.duplicate()
+            copy.id = ele.id
+            copy.gen_var = ele.gen_var
+
+            for k in copy:
+                if isinstance(copy[k], Fact):
+                    for cond in get_rete_conds([copy[k]]):
+                        yield cond
+
+                    if copy[k].id is None:
+                        copy[k] = copy[k].gen_var
+                    else:
+                        copy[k] = copy[k].id
+
+            for cond in copy.conds:
                 yield cond
+
         elif isinstance(ele, AND):
             for cond in get_rete_conds(ele):
                 yield cond
@@ -111,11 +128,15 @@ class Production():
 
     def fire(self, token: Token):
         bindings = token.all_binding()
-        kwargs = {arg: bindings[V(arg)] for arg in self._wrapped_args if
-                  V(arg) in bindings}
+        # kwargs = {arg: bindings[V(arg)] for arg in self._wrapped_args if
+        #           V(arg) in bindings}
+        kwargs = {arg: self._rete_net if arg == 'net' else
+                  self._rete_net.facts[bindings[V(arg)]] if
+                  bindings[V(arg)] in self._rete_net.facts else
+                  bindings[V(arg)] for arg in self._wrapped_args}
 
-        if 'net' in self._wrapped_args:
-            kwargs['net'] = self._rete_net
+        # if 'net' in self._wrapped_args:
+        #     kwargs['net'] = self._rete_net
 
         self(**kwargs)
 

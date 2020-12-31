@@ -4,6 +4,8 @@ from py_rete.conditions import AND
 from py_rete.production import Production
 from py_rete.common import WME
 from py_rete.common import V
+from py_rete.fact import Fact
+from py_rete.conditions import Bind
 from py_rete.network import ReteNetwork
 
 
@@ -21,31 +23,36 @@ def init_network():
 
     return net
 
-# def test_fire():
-#     fire_counting()
+
+def test_fire():
+    fire_counting()
 
 
-# def fire_counting():
-#     net = Network()
-#     c0 = Cond('?node', 'number', '?x')
-#     c1 = Bind('str(?x + 1)', '?y')
-#     e0 = Effect('?node', 'number', '?y')
-#     p0 = Production('add1', AND(c0, c1), AndEffect(e0))
-#     w0 = WME('root', 'number', '1')
-#
-#     net.add_production(p0)
-#     assert len(net.wmes) == 0
-#
-#     net.add_wme(w0)
-#     assert len(net.wmes) == 1
-#
-#     for i in range(10):
-#         net.fire_all()
-#         assert len(net.wmes) == i+2
+def fire_counting():
+    net = ReteNetwork()
+
+    @Production(Fact(number=V('x')) &
+                ~Fact(before=V('x')) &
+                Bind(lambda x: str(int(x) + 1), V('y')))
+    def add1(net, x, y):
+        f = Fact(number=y, before=x)
+        net.add_fact(f)
+
+    net.add_production(add1)
+    assert len(net.wmes) == 0
+
+    net.add_fact(Fact(number='1'))
+    assert len(net.wmes) == 2
+
+    print(net)
+
+    for i in range(10):
+        net.run(1)
+        assert len(net.wmes) == (3*(i+1))+2
 
 
-# def test_fire_counting(benchmark):
-#     benchmark(fire_counting)
+def test_fire_counting(benchmark):
+    benchmark(fire_counting)
 
 
 def add_wmes():

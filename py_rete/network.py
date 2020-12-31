@@ -69,7 +69,11 @@ class ReteNetwork:
             output += "{}: {}\n".format(p.id, p)
         output += "\nFacts:\n"
         for fid in self.facts:
-            output += "{}: {}\n".format(fid, self.facts[fid])
+            copy = self.facts[fid].duplicate()
+            for k in copy:
+                if isinstance(copy[k], Fact):
+                    copy[k] = copy[k].id
+            output += "{}: {}\n".format(fid, copy)
         output += "\nWMEs:\n"
         for wme in self.working_memory:
             output += "{}\n".format(wme)
@@ -77,30 +81,37 @@ class ReteNetwork:
 
     def add_fact(self, fact: Fact) -> None:
         """
-        Adds a fact to the network.
+        Adds a fact to the network and returns the fact id.
         """
         if fact.id is not None:
             raise ValueError("Fact already has an id, cannot add")
 
+        copy = fact.duplicate()
+        for k in copy:
+            if isinstance(copy[k], Fact):
+                if copy[k].id is None:
+                    self.add_fact(copy[k])
+                copy[k] = copy[k].id
+
         fact.id = "f-{}".format(self.fact_counter)
+        copy.id = fact.id
         self.fact_counter += 1
 
         self.facts[fact.id] = fact
 
-        for wme in fact.wmes:
+        for wme in copy.wmes:
             self.add_wme(wme)
 
     def remove_fact(self, fact: Fact) -> None:
         """
         Removes a fact from the network.
         """
-        if fact.id is None:
-            raise ValueError("Fact has no id, cannot remove.")
+        if fact.id is None or fact.id not in self.facts:
+            raise ValueError("Fact has no id or does not exist in network.")
 
-        # Remove fact
-        del self.facts[fact.id]
-
-        self.remove_wme_by_fact_id(fact.id)
+        if fact.id in self.facts:
+            del self.facts[fact.id]
+            self.remove_wme_by_fact_id(fact.id)
 
         fact.id = None
 

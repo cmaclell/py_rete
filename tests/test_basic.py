@@ -106,7 +106,6 @@ def test_readme_network():
 
     # print(light_net)
     light_net.run(5)
-    assert False
 
     matches = list(light_net.matches)
     print(matches)

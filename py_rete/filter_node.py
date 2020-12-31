@@ -1,7 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import inspect
 
 from py_rete.beta import ReteNode
 from py_rete.common import V
+
+if TYPE_CHECKING:
+    from py_rete.network import ReteNetwork
 
 
 class FilterNode(ReteNode):
@@ -14,7 +19,7 @@ class FilterNode(ReteNode):
         - explore use of functions/partials instead of string code snipits
     """
 
-    def __init__(self, children, parent, tmpl):
+    def __init__(self, children, parent, tmpl, rete: ReteNetwork):
         """
         :type children:
         :type parent: BetaNode
@@ -22,6 +27,18 @@ class FilterNode(ReteNode):
         """
         super(FilterNode, self).__init__(children=children, parent=parent)
         self.tmpl = tmpl
+        self._rete_net = None
+
+    def get_function_result(self, token, wme, binding=None):
+        func = self.tmpl
+        all_binding = token.all_binding()
+        all_binding.update(binding)
+
+        args = inspect.getfullargspec(func)[0]
+        args = {arg: self._rete_net if arg == 'net' else all_binding[V(arg)]
+                for arg in args}
+
+        return func(**args)
 
     def left_activation(self, token, wme, binding=None):
         """
@@ -29,14 +46,7 @@ class FilterNode(ReteNode):
         :type wme: WME
         :type token: Token
         """
-        func = self.tmpl
-        all_binding = token.all_binding()
-        all_binding.update(binding)
-
-        args = inspect.getfullargspec(func)[0]
-        args = {arg: all_binding[V(arg)] for arg in args}
-
-        result = func(**args)
+        result = self.get_function_result(token, wme, binding)
 
         if bool(result):
             for child in self.children:

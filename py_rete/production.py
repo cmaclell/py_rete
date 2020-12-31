@@ -15,6 +15,8 @@ from py_rete.conditions import Bind
 from py_rete.conditions import AND
 from py_rete.conditions import OR
 from py_rete.fact import Fact
+from py_rete.common import V
+from py_rete.common import Token
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -40,7 +42,6 @@ def compile_disjuncts(it, nest=True):
             inner = compile_disjuncts(AND(*[ele for ele in it]))
         else:
             inner = compile_disjuncts(it[0])
-        print('inner', inner)
         return (tuple(NOT(*branch) for branch in inner),)
     elif nest:
         return (it,)
@@ -104,10 +105,19 @@ class Production():
 
     def get_rete_conds(self):
         disjuncts = compile_disjuncts(self.pattern)
-        print(disjuncts)
         return [list(get_rete_conds(AND(*disjunct)))
                 if isinstance(disjunct, tuple) else
                 list(get_rete_conds(AND(disjunct))) for disjunct in disjuncts]
+
+    def fire(self, token: Token):
+        bindings = token.all_binding()
+        kwargs = {arg: bindings[V(arg)] for arg in self._wrapped_args if
+                  V(arg) in bindings}
+
+        if 'net' in self._wrapped_args:
+            kwargs['net'] = self._rete_net
+
+        self(**kwargs)
 
     def __call__(self, *args, **kwargs):
 
@@ -133,19 +143,21 @@ class Production():
                 kwargs = {k: v for k, v in kwargs.items()
                           if k in self._wrapped_args}
 
-            # Inject the working rete_net pointer
-            g = self.__wrapped__.__globals__
-            sentinel = object()
-            old_value = g.get('rete_net', sentinel)
-            g['rete_net'] = self._rete_net
+            result = self.__wrapped__(*args, **kwargs)
 
-            try:
-                result = self.__wrapped__(*args, **kwargs)
-            finally:
-                if old_value is sentinel:
-                    del g['rete_net']
-                else:
-                    g['rete_net'] = old_value
+            # # Inject the working rete_net pointer
+            # g = self.__wrapped__.__globals__
+            # sentinel = object()
+            # old_value = g.get('rete_net', sentinel)
+            # g['rete_net'] = self._rete_net
+
+            # try:
+            #     result = self.__wrapped__(*args, **kwargs)
+            # finally:
+            #     if old_value is sentinel:
+            #         del g['rete_net']
+            #     else:
+            #         g['rete_net'] = old_value
 
             return result
 

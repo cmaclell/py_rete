@@ -99,7 +99,7 @@ def alert_something_complex():
 Bitwise logical operators can be used as shorthand to make composing complex conditions easier.
 ```python
 @Production((Fact(color='red') | Fact(color='blue')) & ~Fact(color='green'))
-def alert_something_complex():
+def alert_something_complex2():
     print("I found something red or blue without any green present")
 ```
 
@@ -120,9 +120,9 @@ the tests that use them.
 ```python
 @Production(Fact(value=V('a')) &
             Fact(value=V('b')) &
-            TEST(lambda a, b: a > b) &
+            Filter(lambda a, b: a > b) &
             Fact(value=V('c')) &
-            TEST(lambda b, c: b > c))
+            Filter(lambda b, c: b > c))
 def three_values(a, b, c):
     print("{} is greater than {} is greater than {}".format(a, b, c))
 ```
@@ -131,21 +131,7 @@ It is also possible to bind *facts* to variables as well.
 ```python
 @Production(V('name_fact') << Fact(name=V('name')))
 def found_name(name_fact):
-    print("I found a name fact {}".format(name_fact)
-```
-
-Finally, productions also support nested matching using the double underscore. Imagine that the following facts are in the rete network:
-```python
-Fact(name="scissors", against={"scissors": 0, "rock": -1, "paper": 1})
-Fact(name="paper", against={"scissors": -1, "rock": 1, "paper": 0})
-Fact(name="rock", against={"scissors": 1, "rock": 0, "paper": -1})
-```
-
-Given, these facts, we might have a production like the following:
-```python
-@Production(Fact(name=V('name'), against__scissors=1, against__paper=-1))
-def what_wins_to_scissors_and_losses_to_paper(name):
-    print(name)
+    print("I found a name fact {}".format(name_fact))
 ```
 
 ### ReteNetwork
@@ -200,7 +186,7 @@ update the network.
 >>>     fact['light_color'] = 'red'
 >>>     rete_net.update_fact(fact)
 >>> 
->>> light_net = WorkingMemory()
+>>> light_net = ReteNetwork()
 >>> light_net.add_fact(f1)
 >>> light_net.add_production(make_green)
 >>> light_net.add_production(make_red)
@@ -223,9 +209,14 @@ In addition to this high-level function for running the network, there
 are also some lower-level capabilities that can be used to more closely control
 the rule execution.
 
-For example, you can get all the production matches.
+For example, you can get all the production matches from the matches property.
 ```python
-matches = [match for match in light_net.get_production_matches()]
+matches = list(light_net.matches)
+```
+
+You can also get just the new matches.
+```python
+new = list(light_net.new_matches)
 ```
 
 You can fire one of the matches.

@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typing import Optional
     from py_rete.alpha import AlphaMemory
     from py_rete.beta import ReteNode
+    from py_rete.Production import Production
 
 
 variable_counter = 0
@@ -23,7 +24,7 @@ def gen_variable():
     return V('genvar{}'.format(variable_counter))
 
 
-class V():
+class V:
     """
     A variable for pattern matching.
     """
@@ -41,6 +42,18 @@ class V():
         if not isinstance(other, V):
             return False
         return self.name == other.name
+
+
+class Match:
+    production: Production
+    token: Token
+
+    def __init__(self, prod: Production, token: Token):
+        self.prod = prod
+        self.token = token
+
+    def fire(self):
+        self.prod.fire(self.token)
 
 
 class WME:
@@ -144,7 +157,7 @@ class Token:
             ret.insert(0, t.wme)
         return ret
 
-    def get_binding(self, v: str) -> Optional[str]:
+    def get_binding(self, v: V) -> Any:
         """
         Walks up the parents until it finds a binding for the variable.
 
@@ -207,7 +220,12 @@ class Token:
         if isinstance(self.node, BetaMemory):
             if not self.node.items:
                 for bmchild in self.node.children:
-                    bmchild.amem.successors.remove(bmchild)
+                    # bmchild.amem.successors.remove(bmchild)
+
+                    # TODO not sure if this is right, it was the line above,
+                    # but threw errors on delete of token.
+                    if bmchild in bmchild.amem.successors:
+                        bmchild.amem.successors.remove(bmchild)
 
         if isinstance(self.node, NegativeNode):
             if not self.node.items:

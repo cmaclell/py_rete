@@ -1,7 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import inspect
 import copy
 from py_rete.beta import ReteNode
 from py_rete.common import V
+
+if TYPE_CHECKING:
+    from py_rete.network import ReteNetwork
 
 
 class BindNode(ReteNode):
@@ -18,7 +23,7 @@ class BindNode(ReteNode):
           lists that contain variables or constants
     """
 
-    def __init__(self, children, parent, tmpl, to):
+    def __init__(self, children, parent, tmpl, to, rete: ReteNetwork):
         """
         :type children:
         :type parent: BetaNode
@@ -27,6 +32,18 @@ class BindNode(ReteNode):
         super(BindNode, self).__init__(children=children, parent=parent)
         self.tmpl = tmpl
         self.bind = to
+        self._rete_net = rete
+
+    def get_function_result(self, token, wme, binding=None):
+        func = self.tmpl
+        all_binding = token.all_binding()
+        all_binding.update(binding)
+
+        args = inspect.getfullargspec(func)[0]
+        args = {arg: self._rete_net if arg == 'net' else all_binding[V(arg)]
+                for arg in args}
+
+        return func(**args)
 
     def left_activation(self, token, wme, binding=None):
         """
@@ -34,16 +51,8 @@ class BindNode(ReteNode):
         :type wme: WME
         :type token: Token
         """
-        func = self.tmpl
-        all_binding = token.all_binding()
-        all_binding.update(binding)
+        binding[self.bind] = self.get_function_result(token, wme, binding)
 
-        args = inspect.getfullargspec(func)[0]
-        args = {arg: all_binding[V(arg)] for arg in args}
-
-        result = func(**args)
-
-        binding[self.bind] = result
         for child in self.children:
             binding = copy.deepcopy(binding)
             child.left_activation(token, wme, binding)

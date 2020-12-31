@@ -4,6 +4,7 @@ from typing import Tuple
 from typing import List
 from typing import Set
 from typing import Union
+import random
 from itertools import product
 
 from py_rete.bind_node import BindNode
@@ -17,6 +18,7 @@ from py_rete.pnode import PNode
 from py_rete.common import WME
 from py_rete.common import Token
 from py_rete.common import V
+from py_rete.common import Match
 from py_rete.fact import Fact
 from py_rete.alpha import AlphaMemory
 from py_rete.beta import ReteNode
@@ -47,25 +49,30 @@ class ReteNetwork:
         self.buf = None
         self.pnodes: List[PNode] = []
         self.working_memory: Set[WME] = set()
-        self.facts: Set[Fact] = set()
+        self.facts: Dict[str, Fact] = {}
         self.fact_counter = 0
         self.production_counter = 0
         self.productions: Set[Production] = set()
 
-    def fire_all(self):
-        effects = []
-        for prod, t in self.new_matches:
-            effects += prod.get_effects(t)
-        for e in effects:
-            self.add_wme(e)
+    def run(self, n=10):
+        while n > 0:
+            matches = list(self.matches)
+            if len(matches) <= 0:
+                break
+            match = random.choice(matches)
+            match.fire()
+            n -= 1
 
     def __repr__(self):
-        output = "Facts:\n"
-        for f in self.facts:
-            output += "{}: {}\n".format(f.id, f)
-        output += '\nProductions:\n'
+        output = 'Productions:\n'
         for p in self.productions:
             output += "{}: {}\n".format(p.id, p)
+        output += "\nFacts:\n"
+        for fid in self.facts:
+            output += "{}: {}\n".format(fid, self.facts[fid])
+        output += "\nWMEs:\n"
+        for wme in self.working_memory:
+            output += "{}\n".format(wme)
         return output
 
     def add_fact(self, fact: Fact) -> None:
@@ -78,7 +85,7 @@ class ReteNetwork:
         fact.id = "f-{}".format(self.fact_counter)
         self.fact_counter += 1
 
-        self.facts.add(fact)
+        self.facts[fact.id] = fact
 
         for wme in fact.wmes:
             self.add_wme(wme)
@@ -91,24 +98,39 @@ class ReteNetwork:
             raise ValueError("Fact has no id, cannot remove.")
 
         # Remove fact
-        self.facts.remove(fact)
+        del self.facts[fact.id]
 
-        for wme in fact.wmes:
-            self.remove_wme(wme)
+        self.remove_wme_by_fact_id(fact.id)
 
         fact.id = None
+
+    def get_fact_by_id(self, fact_id: str) -> Fact:
+        return self.facts[fact_id]
+
+    def update_fact(self, fact: Fact) -> None:
+        """
+        Todo: Figure out a fancy way to only update part of the fact
+        """
+        self.remove_fact(fact)
+        self.add_fact(fact)
+
+    def remove_wme_by_fact_id(self, identifier: str) -> None:
+        to_remove = [wme for wme in self.working_memory if wme.identifier ==
+                     identifier]
+        for wme in to_remove:
+            self.remove_wme(wme)
 
     @property
     def new_matches(self) -> Generator[Tuple[Production, Token], None, None]:
         for pnode in self.pnodes:
             for t in pnode.new:
-                yield (pnode.production, t)
+                yield Match(pnode.production, t)
 
     @property
     def matches(self) -> Generator[Tuple[Production, Token], None, None]:
         for pnode in self.pnodes:
             for t in pnode.activations:
-                yield (pnode.production, t)
+                yield Match(pnode.production, t)
 
     @property
     def wmes(self) -> Set[WME]:
@@ -122,6 +144,8 @@ class ReteNetwork:
             raise ValueError("Production already has an id, cannot add")
 
         prod.id = "p-{}".format(self.production_counter)
+        prod._rete_net = self
+
         self.production_counter += 1
         self.productions.add(prod)
 
@@ -133,9 +157,7 @@ class ReteNetwork:
             self.pnodes.append(p_node)
             prod.p_nodes.append(p_node)
 
-        return p_node
-
-    def remove_production(self, prod: Production):
+    def remove_production(self, prod: Production) -> None:
         """
         Removes a pnode from the network
         """
@@ -196,8 +218,10 @@ class ReteNetwork:
         self.buf = ""
         self.buf += 'digraph {\n'
         self.dump_beta(self.beta_root)
-        self.dump_alpha(self.alpha_root)
-        self.dump_alpha2beta(self.alpha_root)
+        # for k in self.alpha_hash:
+        #     self.dump_alpha(self.alpha_hash[k])
+        # self.dump_alpha(self.alpha_hash)
+        # self.dump_alpha2beta(self.alpha_hash)
         self.buf += '}'
         return self.buf
 
@@ -205,14 +229,14 @@ class ReteNetwork:
         """
         :type node: ConstantTestNode
         """
-        if node == self.alpha_root:
-            self.buf += "    subgraph cluster_0 {\n"
-            self.buf += "    label = alpha\n"
+        # if node == self.alpha_root:
+        #     self.buf += "    subgraph cluster_0 {\n"
+        #     self.buf += "    label = alpha\n"
         for child in node.children:
             self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
             self.dump_alpha(child)
-        if node == self.alpha_root:
-            self.buf += "    }\n"
+        # if node == self.alpha_root:
+        #     self.buf += "    }\n"
 
     def dump_alpha2beta(self, node):
         """
@@ -282,7 +306,7 @@ class ReteNetwork:
         result = []
         for field_of_v, v in c.vars:
             for idx, cond in enumerate(earlier_conds):
-                if isinstance(cond, Ncc) or isinstance(cond, Neg):
+                if isinstance(cond, (Neg, Ncc, Bind, Filter)):
                     continue
                 field_of_v2 = cond.contain(v)
                 if not field_of_v2:
@@ -411,7 +435,7 @@ class ReteNetwork:
         for child in parent.children:
             if isinstance(child, FilterNode) and child.tmpl == f.tmpl:
                 return child
-        node = FilterNode([], parent, f.tmpl)
+        node = FilterNode([], parent, f.tmpl, self)
         parent.children.append(node)
         return node
 
@@ -424,7 +448,7 @@ class ReteNetwork:
             if isinstance(child, BindNode) and child.tmpl == b.tmpl \
                     and child.bind == b.to:
                 return child
-        node = BindNode([], parent, b.tmpl, b.to)
+        node = BindNode([], parent, b.tmpl, b.to, self)
         parent.children.append(node)
         return node
 
@@ -494,6 +518,11 @@ class ReteNetwork:
             for token in parent.items:
                 if not token.ncc_results:
                     new_node.left_activation(token, None)
+        elif isinstance(parent, (BindNode, Filter)):
+            saved_list_of_children = parent.children
+            parent.children = [new_node]
+            self.update_new_node_with_matches_from_above(parent)
+            parent.children = saved_list_of_children
 
     def delete_alpha_memory(self, amem):
         del self.alpha_hash[amem.key]

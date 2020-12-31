@@ -17,7 +17,7 @@ class AlphaMemory:
         """
         Stores a set of WMEs (items). If activating an activated wme does not
         exist, then it addes it. It also right activates all of its successors,
-        which correspond ot beta nodes.
+        which correspond to beta nodes.
 
         TODO:
             - replace self.items with a set rather than a list?

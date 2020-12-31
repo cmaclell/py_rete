@@ -4,6 +4,114 @@ from py_rete.conditions import Ncc
 from py_rete.common import WME
 from py_rete.common import Token
 from py_rete.common import V
+from py_rete.fact import Fact
+from py_rete.network import ReteNetwork
+from py_rete.production import Production
+from py_rete.conditions import AND
+from py_rete.conditions import OR
+from py_rete.conditions import NOT
+from py_rete.conditions import Filter
+
+
+def test_readme_facts():
+
+    f = Fact(a=1, b=2)
+    assert f['a'] == 1
+
+    f = Fact('a', 'b', 'c')
+    assert f[0] == 'a'
+
+    f = Fact('a', 'b', c=3, d=4)
+    assert f[0] == 'a'
+    assert f['c'] == 3
+
+
+def test_readme_productions():
+
+    @Production(Fact(color='red'))
+    def alert_something_red():
+        print("I found something red")
+
+    @Production(AND(OR(Fact(color='red'),
+                       Fact(color='blue')),
+                    NOT(Fact(color='green'))))
+    def alert_something_complex():
+        print("I found something red or blue without any green present")
+
+    @Production((Fact(color='red') | Fact(color='blue')) &
+                ~Fact(color='green'))
+    def alert_something_complex2():
+        print("I found something red or blue without any green present")
+
+    @Production(Fact(firstname='Chris', lastname=V('lastname')) &
+                Fact(first='John', lastname=V('lastname')))
+    def found_relatives(lastname):
+        print("I found a pair of relatives with the lastname: "
+              "{}".format(lastname))
+
+    @Production(Fact(value=V('a')) &
+                Fact(value=V('b')) &
+                Filter(lambda a, b: a > b) &
+                Fact(value=V('c')) &
+                Filter(lambda b, c: b > c))
+    def three_values(a, b, c):
+        print("{} is greater than {} is greater than {}".format(a, b, c))
+
+
+def test_readme_production_bind():
+
+    @Production(V('name_fact') << Fact(name=V('name')))
+    def found_name(name_fact):
+        print("I found a name fact {}".format(name_fact))
+
+
+def test_readme_production_nested_match():
+
+    @Production(Fact(name=V('name'), against__scissors=1, against__paper=-1))
+    def what_wins_to_scissors_and_losses_to_paper(name):
+        print(name)
+
+
+def test_readme_network():
+
+    net = ReteNetwork()
+
+    f1 = Fact(light_color="red")
+    net.add_fact(f1)
+
+    f1['light_color'] = "green"
+    net.update_fact(f1)
+
+    net.remove_fact(f1)
+
+    f1 = Fact(light_color="red")
+
+    @Production(V('fact') << Fact(light_color="red"))
+    def make_green(net, fact):
+        print('making green')
+        fact['light_color'] = 'green'
+        net.update_fact(fact)
+
+    @Production(V('fact') << Fact(light_color="green"))
+    def make_red(net, fact):
+        print('making red')
+        fact['light_color'] = 'red'
+        net.update_fact(fact)
+
+    light_net = ReteNetwork()
+    light_net.add_fact(f1)
+    light_net.add_production(make_green)
+    light_net.add_production(make_red)
+    light_net.update_fact(f1)
+
+    # print(light_net)
+    light_net.run(5)
+    assert False
+
+    matches = list(light_net.matches)
+    print(matches)
+    new = list(light_net.new_matches)  # noqa E262
+    matches[0].fire()
 
 
 def test_token():

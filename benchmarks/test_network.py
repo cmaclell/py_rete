@@ -21,7 +21,6 @@ def init_network():
 
     return net
 
-
 # def test_fire():
 #     fire_counting()
 

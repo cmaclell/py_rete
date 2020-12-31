@@ -4,6 +4,8 @@ from itertools import chain
 
 from py_rete.conditions import ComposableCond
 from py_rete.conditions import Cond
+from py_rete.conditions import AND
+from py_rete.conditions import Bind
 from py_rete.common import gen_variable
 from py_rete.common import WME
 from py_rete.common import V
@@ -24,6 +26,18 @@ class Fact(dict, ComposableCond):
         if '__fact_type__' in self:
             raise ValueError("`__fact_type__` cannot be used, it is a reserved"
                              " keyword for matching type internally.")
+
+    def __rlshift__(self, other):
+        if not isinstance(other, V):
+            raise ValueError("Can only assign facts to variables")
+
+        fact_id_var = self.gen_var
+        func = eval("lambda net, {}: net.get_fact_by_id({})".format(
+            fact_id_var.name, fact_id_var.name))
+        # b0 = Bind(lambda: 1+1, V('blah'))
+
+        # return AND(self, b0)
+        return AND(self, Bind(func, other))
 
     def duplicate(self) -> Fact:
         """

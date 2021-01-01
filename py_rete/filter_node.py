@@ -32,7 +32,8 @@ class FilterNode(ReteNode):
     def get_function_result(self, token, wme, binding=None):
         func = self.tmpl
         all_binding = token.all_binding()
-        all_binding.update(binding)
+        if binding:
+            all_binding.update(binding)
 
         args = inspect.getfullargspec(func)[0]
 
@@ -52,6 +53,7 @@ class FilterNode(ReteNode):
         :type token: Token
         """
         result = self.get_function_result(token, wme, binding)
+        print("filter result", result)
 
         if bool(result):
             for child in self.children:

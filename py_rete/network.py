@@ -526,10 +526,13 @@ class ReteNetwork:
             for token in parent.items:
                 if not token.ncc_results:
                     new_node.left_activation(token, None)
-        elif isinstance(parent, (BindNode, Filter)):
+        elif isinstance(parent, (BindNode, FilterNode)):
             saved_list_of_children = parent.children
             parent.children = [new_node]
             self.update_new_node_with_matches_from_above(parent)
+            if parent.parent == self.beta_root:
+                # parent.left_activation(Token(None, None, {}), None, {})
+                parent.left_activation(Token(None, None), None)
             parent.children = saved_list_of_children
 
     def delete_alpha_memory(self, amem):

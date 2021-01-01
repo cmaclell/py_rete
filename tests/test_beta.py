@@ -3,6 +3,9 @@ from py_rete.conditions import AND
 from py_rete.conditions import Cond
 from py_rete.conditions import Neg
 from py_rete.conditions import Ncc
+from py_rete.conditions import Bind
+from py_rete.conditions import Filter
+from py_rete.fact import Fact
 from py_rete.common import WME
 from py_rete.common import Token
 from py_rete.common import V
@@ -35,11 +38,57 @@ def test_network_case0():
     assert len(list(p0.activations)) > 0
 
 
+def test_bind_first():
+    net = ReteNetwork()
+
+    @Production(Bind(lambda: 1+1, V('x')))
+    def test(x):
+        pass
+
+    net.add_production(test)
+
+    assert len(list(net.matches)) == 1
+
+
+def test_filter_first():
+    net = ReteNetwork()
+
+    @Production(Filter(lambda: True))
+    def test():
+        pass
+
+    net.add_production(test)
+
+    assert len(list(net.matches)) == 1
+
+
+def test_filter_first2():
+    net = ReteNetwork()
+    net.add_fact(Fact())
+
+    @Production(Filter(lambda: True) & Fact())
+    def test():
+        pass
+
+    net.add_production(test)
+
+    assert len(list(net.matches)) == 1
+
+
+def test_filter_second():
+    net = ReteNetwork()
+    net.add_fact(Fact())
+
+    @Production(Fact() & Filter(lambda: True) & Fact())
+    def test():
+        pass
+
+    net.add_production(test)
+
+    assert len(list(net.matches)) == 1
+
+
 def test_empty_prod():
-    """
-    Do we want to support empty productions?
-    Should it always match?
-    """
     net = ReteNetwork()
 
     @Production()

@@ -4,8 +4,6 @@ from itertools import chain
 
 from py_rete.conditions import ComposableCond
 from py_rete.conditions import Cond
-from py_rete.conditions import AND
-from py_rete.conditions import Bind
 from py_rete.common import gen_variable
 from py_rete.common import WME
 from py_rete.common import V
@@ -20,6 +18,7 @@ class Fact(dict, ComposableCond):
     def __init__(self, *args, **kwargs) -> None:
         self.id: Optional[str] = None
         self.gen_var = gen_variable()
+        self.bound = False
 
         self.update(dict(chain(enumerate(args), kwargs.items())))
 
@@ -31,13 +30,14 @@ class Fact(dict, ComposableCond):
         if not isinstance(other, V):
             raise ValueError("Can only assign facts to variables")
 
-        fact_id_var = self.gen_var
-        func = eval("lambda {}: {}".format(
-            fact_id_var.name, fact_id_var.name))
-        # b0 = Bind(lambda: 1+1, V('blah'))
+        # fact_id_var = self.gen_var
+        # func = eval("lambda {}: {}".format(
+        #     fact_id_var.name, fact_id_var.name))
+        # return AND(self, Bind(func, other))
 
-        # return AND(self, b0)
-        return AND(self, Bind(func, other))
+        self.gen_var = other
+        self.bound = True
+        return self
 
     def duplicate(self) -> Fact:
         """
@@ -86,6 +86,10 @@ class Fact(dict, ComposableCond):
         kvs = []
         for k in self:
             kvs.append("{}={}".format(k, self[k]))
+
+        if self.bound:
+            return "{} << {}({})".format(self.gen_var, self.__class__.__name__,
+                                         ", ".join(kvs))
 
         return "{}({})".format(self.__class__.__name__, ", ".join(kvs))
 

@@ -105,7 +105,8 @@ class Production():
     p_nodes: List[PNode]
     conditions: Union[ConditionalElement, ConditionalList]
 
-    def __init__(self, pattern: Union[ConditionalElement, ConditionalList]):
+    def __init__(self, pattern: Optional[Union[ConditionalElement,
+                                               ConditionalList]] = None):
         self.__wrapped__ = None
         self._wrapped_args = []
         self._rete_net = None
@@ -121,6 +122,8 @@ class Production():
                 yield token
 
     def get_rete_conds(self):
+        if self.pattern is None:
+            return ([],)
         disjuncts = compile_disjuncts(self.pattern)
         return [list(get_rete_conds(AND(*disjunct)))
                 if isinstance(disjunct, tuple) else

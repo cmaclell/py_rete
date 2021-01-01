@@ -337,7 +337,6 @@ class ReteNetwork:
         :rtype: JoinNode
         """
         for child in parent.all_children:
-            # TODO maybe use isinstance(child, JoinNode)
             if (type(child) == JoinNode and child.amem == amem and
                     child.tests == tests and child.condition == condition):
                 return child
@@ -410,6 +409,8 @@ class ReteNetwork:
                 return child
         node = PNode(production=prod, parent=parent)
         parent.children.append(node)
+        if parent == self.beta_root:
+            node.left_activation(None, None)
         self.update_new_node_with_matches_from_above(node)
         return node
 
@@ -509,23 +510,19 @@ class ReteNetwork:
         # called.
         parent = new_node.parent
         if isinstance(parent, BetaMemory):
-            # new_node is a JoinNode?
             for tok in parent.items:
                 new_node.left_activation(token=tok)
         elif isinstance(parent, JoinNode):
-            # new_node is a BetaMemory?
             saved_list_of_children = parent.children
             parent.children = [new_node]
             for item in parent.amem.items:
                 parent.right_activation(item)
             parent.children = saved_list_of_children
         elif isinstance(parent, NegativeNode):
-            # new_node is a JoinNode?
             for token in parent.items:
                 if not token.join_results:
                     new_node.left_activation(token, None)
         elif isinstance(parent, NccNode):
-            # new_node is a JoinNode?
             for token in parent.items:
                 if not token.ncc_results:
                     new_node.left_activation(token, None)

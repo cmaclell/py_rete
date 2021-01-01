@@ -53,8 +53,6 @@ class FilterNode(ReteNode):
         :type token: Token
         """
         result = self.get_function_result(token, wme, binding)
-        print("filter result", result)
-
         if bool(result):
             for child in self.children:
                 child.left_activation(token, wme, binding)

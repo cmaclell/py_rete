@@ -40,14 +40,8 @@ Here are a few examples of facts and how they work.
 1
 ```
 
-2. Similar to dictionaries, *Facts* do not maintain an internal order of items.
-
-```python
->>> Fact(a=1, b=2)
-Fact(b=2, a=1)
-```
-
-3. *Facts* extend dictionaries, so they also support values without keys.
+2. *Facts* extend dictionaries, so they also support positional values without
+   keys. These values are assigned numerical indices based on their position.
 
 ```python
 >>> f = Fact('a', 'b', 'c')
@@ -55,7 +49,7 @@ Fact(b=2, a=1)
 'a'
 ```
 
-4. *Facts* can support mixed positional and named arguments, but positional
+3. *Facts* can support mixed positional and named arguments, but positional
    must come before named and named arguments do not get positional references.
 
 ```python
@@ -84,12 +78,13 @@ conditions that govern when they execute and bind the arguments necessary for
 their execution.
 
 *Productions* have two components:
-* Conditions, which are essentially facts that can pattern matching variables.
+* Conditions, which are essentially facts that can contain pattern matching
+  variables.
 * A Function, which is executed for each rule match, with the arguments to the
   function being passed the bindings from pattern matching variables.
 
 Here is an example of a simple *Productions* that binds with all *Facts* that
-have the color red and prints 'I found something red':
+have the color red and prints 'I found something red' for each one:
 
 ```python
 @Production(Fact(color='red'))
@@ -115,19 +110,26 @@ def alert_something_complex2():
 ```
 
 In addition to matching simple facts, pattern matching variables can be used to
-match wildcards, ensure variables are consistent across conditions, and to bind
-variables for functions.
+match values from Facts. Matching ensures that variable bindings are consistent
+across conditions. Additionally, variables are passed to arguments in the function
+with the same name during matching. For example, the following production finds
+a Fact with a lastname attribute.  For each Fact it finds, it prints "I found a
+fact with a lastname attribute: `<lastname>`".  Note, the `V('lastname')`
+corresponds to a variable named lastname that can bind with values from Facts
+during matching.  Additionally the variable (`V('lastname')`) and the function
+argument `lastname` match have the same name, which enables the matcher to the
+variable bindings into the function.
 ```python
-@Production(Fact(firstname='Chris', lastname=V('lastname')) &
-            Fact(first='John', lastname=V('lastname')))
+@Production(Fact(lastname=V('lastname')))
 def found_relatives(lastname):
-    print("I found a pair of relatives with the lastname: {}".format(lastname))
+    print("I found a fact with a lastname: {}".format(lastname))
 ```
 
-It is also possible to employ functional tests (lambdas or other functions) in
-conditions. These tests operate over bound variables, so it is important for
-positive facts that bind with these variables to be listed in the production before
-the tests that use them.
+It is also possible to employ functional tests (lambdas or functions) using
+`Filter` conditions. Like the function that is being decorated, Filter
+conditions pass variable bindings to their equivelently named function
+arguments. It is important to note that positive facts that bind with these
+variables need to be listed in the production before the tests that use them.
 ```python
 @Production(Fact(value=V('a')) &
             Fact(value=V('b')) &
@@ -138,9 +140,8 @@ def three_values(a, b, c):
     print("{} is greater than {} is greater than {}".format(a, b, c))
 ```
 
-It is also possible to bind *facts* to variables as well. Note, variables bound
-in this way do not get matched against other occurances of the variable. This is
-primarily for binding variables for use in subsequent function calls.
+It is also possible to bind *facts* to variables as well, using the bitshift
+operator.
 ```python
 @Production(V('name_fact') << Fact(name=V('name')))
 def found_name(name_fact):
@@ -149,7 +150,9 @@ def found_name(name_fact):
 
 ### ReteNetwork
 
-To engage in reasoning *facts* and *productions* are loaded into a **ReteNetwork**, which facilitates the matching and application of productions to facts.
+To engage in reasoning *facts* and *productions* are loaded into a
+**ReteNetwork**, which facilitates the matching and application of productions
+to facts.
 
 Here is how you create a network:
 
@@ -163,7 +166,9 @@ f1 = Fact(light_color="red")
 net.add_fact(f1)
 ```
 
-Note, facts added to the network cannot contain any variables or they will trigger an exception. Additionally, once a fact has been added to network it is assigned a unique internal identifier.
+Note, facts added to the network cannot contain any variables or they will
+trigger an exception when added. Additionally, once a fact has been added to
+network it is assigned a unique internal identifier.
 
 This makes it possible to update the fact.
 ```python
@@ -180,24 +185,26 @@ When updating a fact, note that it is not updated in the network until
 the `update_fact` method is called on it. An update essentially equates to
 removing and re-adding the fact.
 
-Productions can also be added to the network. When they are added, then the
-the `rete_net` variable is added to the scope of the function. This `rete_net` variable
-points to the network the production has been added to, and can be used to
-update the network.
+Productions can also be added to the network. Productions also can make use of
+the `net` variable, which is automatically bound to the Rete network the
+production has been added to. This makes it possible for productions to update
+the contents of the network when they are fired. For example, the following functions
+have an argument called `net` that is bound to the rete network even though there is
+no variable by that name in the production conditions.
 ```python
 >>> f1 = Fact(light_color="red")
 >>> 
 >>> @Production(V('fact') << Fact(light_color="red"))
->>> def make_green(fact):
+>>> def make_green(net, fact):
 >>>	print('making green')
 >>>     fact['light_color'] = 'green'
->>>     rete_net.update_fact(fact)
+>>>     net.update_fact(fact)
 >>> 
 >>> @Production(V('fact') << Fact(light_color="green"))
->>> def make_red(fact):
+>>> def make_red(net, fact):
 >>>	print('making red')
 >>>     fact['light_color'] = 'red'
->>>     rete_net.update_fact(fact)
+>>>     net.update_fact(fact)
 >>> 
 >>> light_net = ReteNetwork()
 >>> light_net.add_fact(f1)
@@ -234,7 +241,8 @@ new = list(light_net.new_matches)
 
 You can fire one of the matches.
 ```python
-matches[0].fire()
+>>> matches[0].fire()
+making red
 ```
 
 [experta]: https://github.com/nilp0inter/experta

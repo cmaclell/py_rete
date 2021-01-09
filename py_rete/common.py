@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from typing import Optional
     from py_rete.alpha import AlphaMemory
     from py_rete.beta import ReteNode
-    from py_rete.Production import Production
+    from py_rete.pnode import PNode
 
 
 variable_counter = 0
@@ -45,15 +45,15 @@ class V:
 
 
 class Match:
-    production: Production
+    pnode: PNode
     token: Token
 
-    def __init__(self, prod: Production, token: Token):
-        self.prod = prod
+    def __init__(self, pnode: PNode, token: Token):
+        self.pnode = pnode
         self.token = token
 
     def fire(self):
-        self.prod.fire(self.token)
+        return self.pnode.production.fire(self.token)
 
 
 class WME:
@@ -174,7 +174,7 @@ class Token:
 
     def all_binding(self) -> dict:
         path = [self]
-        if path[0].parent:
+        while path[0].parent:
             path.insert(0, path[0].parent)
         binding = {}
         for t in path:

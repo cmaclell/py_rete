@@ -6,6 +6,7 @@ from py_rete.common import WME
 from py_rete.common import V
 from py_rete.fact import Fact
 from py_rete.conditions import Bind
+from py_rete.conditions import Filter
 from py_rete.network import ReteNetwork
 
 
@@ -26,6 +27,35 @@ def init_network():
 
 def test_fire():
     fire_counting()
+
+
+def add_to_depth():
+    net = ReteNetwork()
+
+    @Production(Fact(number=V('x'), depth=V('xd')) &
+                Fact(number=V('y'), depth=V('yd')) &
+                Filter(lambda xd, yd: xd+yd < 2))
+    def add(net, x, y, xd, yd):
+        f = Fact(number=x+y, depth=xd+yd+1)
+        net.add_fact(f)
+
+    net.add_fact(Fact(name="1", number=1, depth=0))
+    net.add_fact(Fact(name="2", number=2, depth=0))
+    net.add_fact(Fact(name="3", number=3, depth=0))
+    net.add_fact(Fact(name="5", number=5, depth=0))
+    # net.add_fact(Fact(name="7", number=7, depth=0))
+
+    net.add_production(add)
+
+    while len(list(net.new_matches)) > 0:
+        # print(len(list(net.new_matches)))
+        m = net.get_new_match()
+        m.fire()
+
+    # print(net)
+    # print(len(net.facts))
+
+    #raise Exception("BEEP")
 
 
 def fire_counting():
@@ -72,6 +102,10 @@ def add_wmes():
         net.add_wme(wme)
 
     return net
+
+
+def test_add_to_depth(benchmark):
+    benchmark(add_to_depth)
 
 
 def test_init_network(benchmark):
@@ -134,3 +168,7 @@ def test_facts():
     stored_wmes = [e for e in net.wmes]
     assert len(stored_wmes) == 1
     assert stored_wmes == wmes[1:]
+
+
+if __name__ == "__main__":
+    add_to_depth()

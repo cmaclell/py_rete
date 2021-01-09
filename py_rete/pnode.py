@@ -29,6 +29,10 @@ class PNode(BetaMemory):
         self.items.append(new_token)
         self.new.append(new_token)
 
+    def pop_new_token(self):
+        if self.new:
+            return self.new.pop()
+
     def new_activations(self):
         while self.new:
             t = self.new.pop()

@@ -141,7 +141,7 @@ class Production():
         # if 'net' in self._wrapped_args:
         #     kwargs['net'] = self._rete_net
 
-        self(**kwargs)
+        return self(**kwargs)
 
     def __call__(self, *args, **kwargs):
 

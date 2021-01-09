@@ -131,17 +131,23 @@ class ReteNetwork:
         for wme in to_remove:
             self.remove_wme(wme)
 
+    def get_new_match(self) -> Match:
+        for pnode in self.pnodes:
+            if pnode.new:
+                t = pnode.pop_new_token()
+                return Match(pnode, t)
+
     @property
     def new_matches(self) -> Generator[Tuple[Production, Token], None, None]:
         for pnode in self.pnodes:
             for t in pnode.new:
-                yield Match(pnode.production, t)
+                yield Match(pnode, t)
 
     @property
     def matches(self) -> Generator[Tuple[Production, Token], None, None]:
         for pnode in self.pnodes:
             for t in pnode.activations:
-                yield Match(pnode.production, t)
+                yield Match(pnode, t)
 
     @property
     def wmes(self) -> Set[WME]:

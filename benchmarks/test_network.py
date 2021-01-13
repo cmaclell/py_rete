@@ -34,7 +34,7 @@ def add_to_depth():
 
     @Production(Fact(number=V('x'), depth=V('xd')) &
                 Fact(number=V('y'), depth=V('yd')) &
-                Filter(lambda xd, yd: xd+yd < 2))
+                Filter(lambda xd, yd: xd+yd < 1))
     def add(net, x, y, xd, yd):
         f = Fact(number=x+y, depth=xd+yd+1)
         net.add_fact(f)
@@ -42,7 +42,7 @@ def add_to_depth():
     net.add_fact(Fact(name="1", number=1, depth=0))
     net.add_fact(Fact(name="2", number=2, depth=0))
     net.add_fact(Fact(name="3", number=3, depth=0))
-    net.add_fact(Fact(name="5", number=5, depth=0))
+    # net.add_fact(Fact(name="5", number=5, depth=0))
     # net.add_fact(Fact(name="7", number=7, depth=0))
 
     net.add_production(add)
@@ -51,11 +51,6 @@ def add_to_depth():
         # print(len(list(net.new_matches)))
         m = net.get_new_match()
         m.fire()
-
-    # print(net)
-    # print(len(net.facts))
-
-    #raise Exception("BEEP")
 
 
 def fire_counting():

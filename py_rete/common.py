@@ -36,7 +36,11 @@ class V:
         return "V({})".format(self.name)
 
     def __hash__(self):
-        return hash("V({})".format(self.name))
+        try:
+            return self._hash
+        except AttributeError:
+            self._hash = hash("V({})".format(self.name))
+            return self._hash
 
     def __eq__(self, other):
         if not isinstance(other, V):

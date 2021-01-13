@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 from py_rete.common import Token
 from py_rete.common import WME
+from py_rete.common import V
 from py_rete.alpha import AlphaMemory
 from py_rete.beta import ReteNode
 
@@ -61,6 +63,8 @@ class JoinNode(ReteNode):
         self.tests: List[TestAtJoinNode] = tests
         self.condition = condition
         self.nearest_ancestor_with_same_amem = None
+        self.vars = [(v, field) for field, v in self.condition.vars if
+                     isinstance(v, V)]
 
     @property
     def amem_recently_nonempty(self) -> bool:
@@ -102,7 +106,7 @@ class JoinNode(ReteNode):
                 self.amem.successors.remove(self)
         for token in self.parent.items:
             if self.perform_join_test(token, wme):
-                binding = self.make_binding(wme)
+                binding = self.make_binding(token, wme)
                 for child in self.children:
                     child.left_activation(token, wme, binding)
 
@@ -142,7 +146,7 @@ class JoinNode(ReteNode):
                 self.parent.children.remove(self)
         for wme in self.amem.items:
             if self.perform_join_test(token, wme):
-                binding = self.make_binding(wme)
+                binding = self.make_binding(token, wme)
                 for child in self.children:
                     child.left_activation(token=token, wme=wme,
                                           binding=binding)
@@ -152,22 +156,18 @@ class JoinNode(ReteNode):
         :type token: rete.Token
         :type wme: rete.WME
         """
-        for this_test in self.tests:
-            arg1 = getattr(wme, this_test.field_of_arg1)
-            wme2 = token.wmes[this_test.condition_number_of_arg2]
-            arg2 = getattr(wme2, this_test.field_of_arg2)
-            if arg1 != arg2:
+        for v, field in self.vars:
+            if (v in token.binding and
+                    getattr(wme, field) != token.binding[v]):
                 return False
         return True
 
-    def make_binding(self, wme):
+    def make_binding(self, token, wme):
         """
         :type wme: WME
         """
-        binding = {}
-        for field, v in self.condition.vars:
-            val = getattr(wme, field)
-            binding[v] = val
+        binding = token.binding.copy()
+        binding.update({v: getattr(wme, field) for v, field in self.vars})
         return binding
 
 

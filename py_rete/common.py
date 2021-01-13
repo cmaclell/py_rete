@@ -1,13 +1,9 @@
-"""
-    TODO:
-        - Why is fields at the top? is it mutable?
-            - seems to be used in other functions to get the field names
-"""
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from typing import Any
+    from typing import Hashable
     from typing import List
     from typing import Optional
     from py_rete.alpha import AlphaMemory
@@ -19,42 +15,30 @@ variable_counter = 0
 
 
 def gen_variable():
+    """
+    Used for generating variables with a unique name in the global context.
+    """
     global variable_counter
     variable_counter += 1
     return V('genvar{}'.format(variable_counter))
 
 
+@dataclass(eq=True, frozen=True)
 class V:
     """
     A variable for pattern matching.
     """
-
-    def __init__(self, name):
-        self.name = name
+    __slots__ = ['name']
+    name: str
 
     def __repr__(self):
         return "V({})".format(self.name)
 
-    def __hash__(self):
-        try:
-            return self._hash
-        except AttributeError:
-            self._hash = hash("V({})".format(self.name))
-            return self._hash
 
-    def __eq__(self, other):
-        if not isinstance(other, V):
-            return False
-        return self.name == other.name
-
-
+@dataclass(eq=True, frozen=True)
 class Match:
     pnode: PNode
     token: Token
-
-    def __init__(self, pnode: PNode, token: Token):
-        self.pnode = pnode
-        self.token = token
 
     def fire(self):
         return self.pnode.production.fire(self.token)
@@ -64,24 +48,19 @@ class WME:
     """
     This is essentially a fact, it has no variables in it. A working memory is
     essentially comprised of a collection of these elements.
-
-    TODO:
-        - Change to prefix?
-        - Add tests to raise exception in the presence of variables.
     """
+    __slots__ = ['identifier', 'attribute', 'value', 'amems', 'tokens',
+                 'negative_join_results']
 
-    def __init__(self, identifier: Any, attribute: Any, value: Any) -> None:
+    def __init__(self, identifier: Hashable, attribute: Hashable, value:
+                 Hashable) -> None:
         """
-        identifier, attribute, and value are all strings, if they start with a
-        $ then they are a variable.
-
-        :type identifier: str
-        :type attribute: str
-        :type value: str
+        Identifier, attribute, and value can be any kind of object except V
+        objects (i.e., variables).
         """
-        assert not isinstance(identifier, V)
-        assert not isinstance(attribute, V)
-        assert not isinstance(value, V)
+        if (isinstance(identifier, V) or isinstance(attribute, V) or
+                isinstance(value, V)):
+            raise ValueError("WMEs cannot have variables (V objects).")
 
         self.identifier = identifier
         self.attribute = attribute
@@ -111,14 +90,15 @@ class Token:
     """
     Tokens represent matches within the alpha and beta memories. The parent
     corresponds to the match that was extended to create the current token.
-
-    TODO:
-        - Node, maybe should be of type BetaMemory, it shoud have items.
     """
+    __slots__ = ['parent', 'wme', 'node', 'children', 'join_results',
+                 'ncc_results', 'owner', 'binding']
 
-    def __init__(self, parent: Optional[Token], wme: Optional[WME], node:
-                 Optional[ReteNode] = None,
-                 binding: Optional[dict] = None) -> None:
+    def __init__(self, parent: Optional[Token],
+                 wme: Optional[WME],
+                 node: Optional[ReteNode] = None,
+                 binding: Optional[dict] = None
+                 ) -> None:
         """
         :type wme: WME
         :type parent: Token
@@ -161,30 +141,6 @@ class Token:
             ret.insert(0, t.wme)
         return ret
 
-    def get_binding(self, v: V) -> Any:
-        """
-        Walks up the parents until it finds a binding for the variable.
-
-        TODO:
-            - Seems expensive, maybe possible to cache?
-        """
-        assert isinstance(v, V)
-        t = self
-        ret = t.binding.get(v)
-        while not ret and t.parent:
-            t = t.parent
-            ret = t.binding.get(v)
-        return ret
-
-    def all_binding(self) -> dict:
-        path = [self]
-        while path[0].parent:
-            path.insert(0, path[0].parent)
-        binding = {}
-        for t in path:
-            binding.update(t.binding)
-        return binding
-
     def delete_descendents_of_token(self) -> None:
         """
         Helper function to delete all the descendent tokens.
@@ -207,12 +163,12 @@ class Token:
         from py_rete.ncc_node import NccPartnerNode
         from py_rete.negative_node import NegativeNode
         from py_rete.beta import BetaMemory
-        from py_rete.pnode import PNode
+        from py_rete.join_node import JoinNode
 
         for child in self.children:
             child.delete_token_and_descendents()
 
-        if (isinstance(self.node, (BetaMemory, NegativeNode, PNode)) and not
+        if (isinstance(self.node, BetaMemory) and not
                 isinstance(self.node, NccPartnerNode)):
             self.node.items.remove(self)
 
@@ -224,11 +180,8 @@ class Token:
         if isinstance(self.node, BetaMemory):
             if not self.node.items:
                 for bmchild in self.node.children:
-                    # bmchild.amem.successors.remove(bmchild)
-
-                    # TODO not sure if this is right, it was the line above,
-                    # but threw errors on delete of token.
-                    if bmchild in bmchild.amem.successors:
+                    if (isinstance(bmchild, JoinNode) and bmchild in
+                            bmchild.amem.successors):
                         bmchild.amem.successors.remove(bmchild)
 
         if isinstance(self.node, NegativeNode):
@@ -248,20 +201,15 @@ class Token:
             self.owner.ncc_results.remove(self)
             if not self.owner.ncc_results and self.node.ncc_node:
                 for bchild in self.node.ncc_node.children:
-                    # TODO what is the None?
                     bchild.left_activation(self.owner, None)
 
 
+@dataclass(eq=True, frozen=True)
 class NegativeJoinResult:
     """
     A new class to store the result of a negative join. Similar to a token, it
     is owned by a token.
     """
-
-    def __init__(self, owner: Token, wme: WME):
-        """
-        :type wme: rete.WME
-        :type owner: rete.Token
-        """
-        self.owner = owner
-        self.wme = wme
+    __slots__ = ['owner', 'wme']
+    owner: Token
+    wme: WME

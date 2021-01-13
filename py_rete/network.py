@@ -12,7 +12,6 @@ from py_rete.filter_node import FilterNode
 from py_rete.ncc_node import NccPartnerNode
 from py_rete.ncc_node import NccNode
 from py_rete.negative_node import NegativeNode
-from py_rete.join_node import TestAtJoinNode
 from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
 from py_rete.common import WME
@@ -33,14 +32,7 @@ from py_rete.production import Production
 
 class ReteNetwork:
     """
-    TODO:
-        - Add a top level function to get teh current set of productions that
-          match
-            - Need to track the pnodes somewhere?
-        - Add top level function to fire all matching productions
-          (simultaneously), a cycle in the wme.
-        - Give WMEs a pointer for tracking their dependencies/support, if it
-          goes away they need to be retracted.
+    A Rete Network to store all the facts and productions to compute matches.
     """
 
     def __init__(self):
@@ -50,11 +42,15 @@ class ReteNetwork:
         self.pnodes: List[PNode] = []
         self.working_memory: Set[WME] = set()
         self.facts: Dict[str, Fact] = {}
-        self.fact_counter = 0
-        self.production_counter = 0
+        self.fact_counter: int = 0
+        self.production_counter: int = 0
         self.productions: Set[Production] = set()
 
-    def run(self, n=10):
+    def run(self, n: int = 10) -> None:
+        """
+        First n rules, chosen at random. After each rule is fired the facts are
+        updated and new matches computed.
+        """
         while n > 0:
             matches = list(self.matches)
             if len(matches) <= 0:
@@ -81,7 +77,7 @@ class ReteNetwork:
 
     def add_fact(self, fact: Fact) -> None:
         """
-        Adds a fact to the network and returns the fact id.
+        Adds a fact to the network.
         """
         if fact.id is not None:
             raise ValueError("Fact already has an id, cannot add")
@@ -119,9 +115,7 @@ class ReteNetwork:
         return self.facts[fact_id]
 
     def update_fact(self, fact: Fact) -> None:
-        """
-        Todo: Figure out a fancy way to only update part of the fact
-        """
+        # TODO: Figure out a fancy way to only update part of the fact
         self.remove_fact(fact)
         self.add_fact(fact)
 
@@ -181,7 +175,7 @@ class ReteNetwork:
         if prod.id is None:
             raise ValueError("Production has no id, cannot remove.")
 
-        # Remove fact
+        # Remove production
         self.productions.remove(prod)
 
         for pnode in prod.p_nodes:
@@ -191,7 +185,7 @@ class ReteNetwork:
         prod.id = None
         prod.p_nodes = []
 
-    def add_wme(self, wme) -> None:
+    def add_wme(self, wme: WME) -> None:
         if wme in self.working_memory:
             return
 
@@ -205,19 +199,14 @@ class ReteNetwork:
 
         self.working_memory.add(wme)
 
-    def remove_wme(self, wme: WME):
-        """
-        :type wme: WME
-        """
+    def remove_wme(self, wme: WME) -> None:
         for am in wme.amems:
             am.items.remove(wme)
             if not am.items:
                 for node in am.successors:
-                    if isinstance(node, (JoinNode, NegativeNode)):
-                        # TODO fix type error, triggered by negativenode, which
-                        # is also a betamemory, it confuses mypy because of
-                        # multiple inheritance
-                        node.parent.children.remove(node)  # type: ignore
+                    if (isinstance(node, JoinNode) and
+                            not isinstance(node, NegativeNode)):
+                        node.parent.children.remove(node)
 
         for t in wme.tokens:
             t.delete_token_and_descendents()
@@ -230,56 +219,6 @@ class ReteNetwork:
                         child.left_activation(jr.owner, None)
 
         self.working_memory.remove(wme)
-
-    def dump(self):
-        self.buf = ""
-        self.buf += 'digraph {\n'
-        self.dump_beta(self.beta_root)
-        # for k in self.alpha_hash:
-        #     self.dump_alpha(self.alpha_hash[k])
-        # self.dump_alpha(self.alpha_hash)
-        # self.dump_alpha2beta(self.alpha_hash)
-        self.buf += '}'
-        return self.buf
-
-    def dump_alpha(self, node):
-        """
-        :type node: ConstantTestNode
-        """
-        # if node == self.alpha_root:
-        #     self.buf += "    subgraph cluster_0 {\n"
-        #     self.buf += "    label = alpha\n"
-        for child in node.children:
-            self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
-            self.dump_alpha(child)
-        # if node == self.alpha_root:
-        #     self.buf += "    }\n"
-
-    def dump_alpha2beta(self, node):
-        """
-        :type node: ConstantTestNode
-        """
-        if node.amem:
-            for child in node.amem.successors:
-                self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
-        for child in node.children:
-            self.dump_alpha2beta(child)
-
-    def dump_beta(self, node):
-        """
-        :type node: BetaNode
-        """
-        if node == self.beta_root:
-            self.buf += "    subgraph cluster_1 {\n"
-            self.buf += "    label = beta\n"
-        if isinstance(node, NccPartnerNode):
-            self.buf += '    "%s" -> "%s";\n' % (node.dump(),
-                                                 node.ncc_node.dump())
-        for child in node.children:
-            self.buf += '    "%s" -> "%s";\n' % (node.dump(), child.dump())
-            self.dump_beta(child)
-        if node == self.beta_root:
-            self.buf += "    }\n"
 
     def build_or_share_alpha_memory(self, condition):
         """
@@ -311,42 +250,14 @@ class ReteNetwork:
 
         return self.alpha_hash[key]
 
-    @classmethod
-    def get_join_tests_from_condition(cls, c: Cond,
-                                      earlier_conds: List[Cond]
-                                      ) -> List[TestAtJoinNode]:
-        """
-        :type c: Cond
-        :type earlier_conds: List of Cond
-        :rtype: list of TestAtJoinNode
-        """
-        result = []
-        for field_of_v, v in c.vars:
-            for idx, cond in enumerate(earlier_conds):
-                if isinstance(cond, (Neg, Ncc, Bind, Filter)):
-                    continue
-                field_of_v2 = cond.contain(v)
-                if not field_of_v2:
-                    continue
-                t = TestAtJoinNode(field_of_v, idx, field_of_v2)
-                result.append(t)
-        return result
-
     def build_or_share_join_node(self, parent: BetaMemory, amem: AlphaMemory,
-                                 tests: List[TestAtJoinNode], condition: Cond
-                                 ) -> JoinNode:
-        """
-        :type condition: Cond
-        :type parent: BetaNode
-        :type amem: AlphaMemory
-        :type tests: list of TestAtJoinNode
-        :rtype: JoinNode
-        """
+                                 condition: Cond) -> JoinNode:
+
         for child in parent.all_children:
             if (type(child) == JoinNode and child.amem == amem and
-                    child.tests == tests and child.condition == condition):
+                    child.condition == condition):
                 return child
-        node = JoinNode(children=[], parent=parent, amem=amem, tests=tests,
+        node = JoinNode(children=[], parent=parent, amem=amem,
                         condition=condition)
         parent.children.append(node)
         parent.all_children.append(node)
@@ -361,21 +272,13 @@ class ReteNetwork:
         return node
 
     def build_or_share_negative_node(self, parent: JoinNode, amem: AlphaMemory,
-                                     tests: List[TestAtJoinNode],
                                      condition: Neg) -> NegativeNode:
-        """
-        :type parent: BetaNode
-        :type amem: AlphaMemory
-        :type tests: list of TestAtJoinNode
-        :rtype: JoinNode
-        """
 
         for child in parent.children:
             if (isinstance(child, NegativeNode) and child.amem == amem and
-                    child.tests == tests):
+                    child.condition == condition):
                 return child
-        node = NegativeNode(parent=parent, amem=amem, tests=tests,
-                            condition=condition)
+        node = NegativeNode(parent=parent, amem=amem, condition=condition)
         parent.children.append(node)
         amem.successors.append(node)
 
@@ -387,11 +290,7 @@ class ReteNetwork:
 
         return node
 
-    def build_or_share_beta_memory(self, parent: JoinNode) -> BetaMemory:
-        """
-        :type parent: JoinNode
-        :rtype: BetaMemory
-        """
+    def build_or_share_beta_memory(self, parent: ReteNode) -> BetaMemory:
         for child in parent.children:
             # if isinstance(child, BetaMemory):  # Don't include subclasses
             if type(child) == BetaMemory:
@@ -404,30 +303,20 @@ class ReteNetwork:
         self.update_new_node_with_matches_from_above(node)
         return node
 
-    def build_or_share_p(self, parent, prod):
-        """
-        :type kwargs:
-        :type parent: BetaNode
-        :rtype: PNode
-        """
+    def build_or_share_p(self, parent: ReteNode, prod: Production) -> PNode:
         for child in parent.children:
             if isinstance(child, PNode):
                 return child
         node = PNode(production=prod, parent=parent)
         parent.children.append(node)
         if parent == self.beta_root:
-            node.left_activation(None, None)
+            node.left_activation(Token(None, None), None, {})
         self.update_new_node_with_matches_from_above(node)
         return node
 
     def build_or_share_ncc_nodes(self, parent: JoinNode, ncc: Ncc,
                                  earlier_conds: List[Cond]
                                  ) -> NccNode:
-        """
-        :type earlier_conds: Rule
-        :type ncc: Ncc
-        :type parent: BetaNode
-        """
         bottom_of_subnetwork = self.build_or_share_network_for_conditions(
             parent, ncc, earlier_conds)
         for child in parent.children:
@@ -445,56 +334,40 @@ class ReteNetwork:
         self.update_new_node_with_matches_from_above(ncc_partner)
         return ncc_node
 
-    def build_or_share_filter_node(self, parent, f):
-        """
-        :type f: Filter
-        :type parent: BetaNode
-        """
+    def build_or_share_filter_node(self, parent: ReteNode,
+                                   f: Filter) -> FilterNode:
         for child in parent.children:
-            if isinstance(child, FilterNode) and child.tmpl == f.tmpl:
+            if isinstance(child, FilterNode) and child.func == f.func:
                 return child
-        node = FilterNode([], parent, f.tmpl, self)
+        node = FilterNode([], parent, f.func, self)
         parent.children.append(node)
         return node
 
-    def build_or_share_bind_node(self, parent, b):
-        """
-        :type b: Bind
-        :type parent: BetaNode
-        """
+    def build_or_share_bind_node(self, parent: ReteNode, b: Bind) -> BindNode:
         for child in parent.children:
-            if isinstance(child, BindNode) and child.tmpl == b.tmpl \
-                    and child.bind == b.to:
+            if (isinstance(child, BindNode) and child.func == b.func and
+                    child.bind == b.to):
                 return child
-        node = BindNode([], parent, b.tmpl, b.to, self)
+        node = BindNode([], parent, b.func, b.to, self)
         parent.children.append(node)
         return node
 
-    def build_or_share_network_for_conditions(self, parent,
+    def build_or_share_network_for_conditions(self, parent: ReteNode,
                                               rule: Union[Ncc, List[Cond]],
-                                              earlier_conds: List[Cond]):
-        """
-        :type earlier_conds: list of BaseCondition
-        :type parent: BetaNode
-        :type rule: Rule
-        """
+                                              earlier_conds: List[Cond]
+                                              ) -> ReteNode:
         current_node = parent
         conds_higher_up = earlier_conds
         for cond in rule:
             if isinstance(cond, Cond) and not isinstance(cond, Neg):
                 current_node = self.build_or_share_beta_memory(current_node)
-                tests = self.get_join_tests_from_condition(cond,
-                                                           conds_higher_up)
                 am = self.build_or_share_alpha_memory(cond)
                 current_node = self.build_or_share_join_node(current_node, am,
-                                                             tests, cond)
+                                                             cond)
             elif isinstance(cond, Neg):
-                tests = self.get_join_tests_from_condition(cond,
-                                                           conds_higher_up)
                 am = self.build_or_share_alpha_memory(cond)
                 current_node = self.build_or_share_negative_node(current_node,
-                                                                 am, tests,
-                                                                 cond)
+                                                                 am, cond)
             elif isinstance(cond, Ncc):
                 current_node = self.build_or_share_ncc_nodes(current_node,
                                                              cond,
@@ -508,12 +381,8 @@ class ReteNetwork:
             conds_higher_up.append(cond)
         return current_node
 
-    def update_new_node_with_matches_from_above(self, new_node):
-        """
-        :type new_node: BetaNode
-        """
-        # TODO: named arguments for activations, confusing which is being
-        # called.
+    def update_new_node_with_matches_from_above(self, new_node: ReteNode
+                                                ) -> None:
         parent = new_node.parent
         if isinstance(parent, BetaMemory):
             for tok in parent.items:
@@ -538,20 +407,17 @@ class ReteNetwork:
             self.update_new_node_with_matches_from_above(parent)
             if parent.parent == self.beta_root:
                 # parent.left_activation(Token(None, None, {}), None, {})
-                parent.left_activation(Token(None, None), None)
+                parent.left_activation(Token(None, None), None, {})
             parent.children = saved_list_of_children
 
-    def delete_alpha_memory(self, amem):
+    def delete_alpha_memory(self, amem: AlphaMemory):
         del self.alpha_hash[amem.key]
 
-    def delete_node_and_any_unused_ancestors(self, node):
-        """
-        :type node: BetaNode
-        """
+    def delete_node_and_any_unused_ancestors(self, node: ReteNode):
         if isinstance(node, NccNode):
             self.delete_node_and_any_unused_ancestors(node.partner)
 
-        if isinstance(node, (BetaMemory, NegativeNode, NccNode)):
+        if isinstance(node, BetaMemory):
             for item in node.items:
                 item.delete_token_and_descendents()
 
@@ -559,18 +425,24 @@ class ReteNetwork:
             for item in node.new_result_buffer:
                 item.delete_token_and_descendents()
 
-        if isinstance(node, (JoinNode, NegativeNode)):
+        if isinstance(node, JoinNode):
             if not node.right_unlinked:
                 node.amem.successors.remove(node)
+
             node.amem.reference_count -= 1
+
             if node.amem.reference_count == 0:
                 self.delete_alpha_memory(node.amem)
 
-        if isinstance(node, JoinNode):
             if not node.left_unlinked:
                 node.parent.children.remove(node)
+
             node.parent.all_children.remove(node)
+
             if not node.parent.all_children:
                 self.delete_node_and_any_unused_ancestors(node.parent)
-        elif not node.parent.children:
-            self.delete_node_and_any_unused_ancestors(node.parent)
+
+        else:
+            node.parent.children.remove(node)
+            if not node.parent.children:
+                self.delete_node_and_any_unused_ancestors(node.parent)

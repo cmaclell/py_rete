@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from dataclasses import dataclass
 
 from py_rete.common import Token
 from py_rete.common import WME
@@ -9,23 +8,20 @@ from py_rete.alpha import AlphaMemory
 from py_rete.beta import ReteNode
 
 if TYPE_CHECKING:
-    from typing import List
-    from py_rete.beta import BetaMemory
+    from typing import Dict
+    from py_rete.conditions import Condition
 
 
 class JoinNode(ReteNode):
     """
-    A beta network class. Does the heavly lifting of joining two beta network
-    paths.
+    A beta network class. Does the heavly lifting of joining tokens from a beta
+    memory with wmes from an alpha memory.
 
     This class has an alpha memory connected to its right side, which triggers
     right_activations.
 
     The parent constitutes the left side (another node in the beta network),
     which triggers left_activations.
-
-    The tests are a list of join node tests, corresponding to variables on the
-    left and right sides that must be consistent.
 
     When the JoinNode is right activated, it checks the incoming wme against
     all the tokens in the parent (on the left side), using the tests. For
@@ -35,32 +31,10 @@ class JoinNode(ReteNode):
     the wmes from the alpha memory instead (essentially the opposite direction
     as above). Similarly, for matches, updated bindings are created and
     children are activated.
-
-    The Has is used to make new variable bindings, but not sure what it
-    represents.
-
-    TODO:
-        - Why does it get a has, or a pattern?
-        - perform_join_test
-            - Push the actual test evaluation into the TestAtJoinNode class, so
-              it can be subclassed with other kinds of tests.
-            - Currently only supports equality, maybe add support for other
-              tests?
     """
-    parent: BetaMemory
-    children: List[BetaMemory]
-
-    def __init__(self, amem, tests, condition, **kwargs):
-        """
-        :type children:
-        :type parent: BetaNode
-        :type amem: AlphaMemory
-        :type tests: list of TestAtJoinNode
-        :type has: Has
-        """
-        super(JoinNode, self).__init__(**kwargs)
+    def __init__(self, amem: AlphaMemory, condition: Condition, **kwargs):
+        super().__init__(**kwargs)
         self.amem: AlphaMemory = amem
-        self.tests: List[TestAtJoinNode] = tests
         self.condition = condition
         self.nearest_ancestor_with_same_amem = None
         self.vars = [(v, field) for field, v in self.condition.vars if
@@ -91,14 +65,9 @@ class JoinNode(ReteNode):
             return self
         return self.parent.find_nearest_ancestor_with_same_amem(amem)
 
-    def right_activation(self, wme: WME):
+    def right_activation(self, wme: WME) -> None:
         """
         Called when an element is added to the respective alpha memory.
-
-        TODO:
-            - Explore typing, parent and parent.items should not be optional.
-
-        :type wme: rete.WME
         """
         if self.amem_recently_nonempty:
             self.relink_to_beta_memory()
@@ -111,10 +80,6 @@ class JoinNode(ReteNode):
                     child.left_activation(token, wme, binding)
 
     def relink_to_alpha_memory(self):
-        """
-        TODO:
-            - test and verify
-        """
         ancestor = self.nearest_ancestor_with_same_amem
         while ancestor and ancestor.right_unlinked:
             ancestor = ancestor.nearest_ancestor_with_same_amem
@@ -128,17 +93,11 @@ class JoinNode(ReteNode):
             self.amem.successors.insert(0, self)
 
     def relink_to_beta_memory(self):
-        """
-        TODO:
-            - test and verify
-        """
         self.parent.children.append(self)
 
-    def left_activation(self, token):
+    def left_activation(self, token: Token) -> None:
         """
         Called when an element is added to the parent beta node.
-
-        :type token: rete.Token
         """
         if self.parent_recently_nonempty:
             self.relink_to_alpha_memory()
@@ -153,8 +112,7 @@ class JoinNode(ReteNode):
 
     def perform_join_test(self, token: Token, wme: WME) -> bool:
         """
-        :type token: rete.Token
-        :type wme: rete.WME
+        Test if the token and wme are compatible.
         """
         for v, field in self.vars:
             if (v in token.binding and
@@ -162,36 +120,14 @@ class JoinNode(ReteNode):
                 return False
         return True
 
-    def make_binding(self, token, wme):
+    def make_binding(self, token: Token, wme: WME) -> Dict[V, any]:
         """
-        :type wme: WME
+        Makes updated bindings that result from joining token and wme.
         """
-        binding = token.binding.copy()
-        binding.update({v: getattr(wme, field) for v, field in self.vars})
-        return binding
-
-
-class TestAtJoinNode:
-    """
-    This class stores information for testing if a token and wme are compatible
-    within a join node.
-
-    TODO:
-        - Explore how to support other tests besides equality?
-    """
-
-    def __init__(self, field_of_arg1, condition_number_of_arg2, field_of_arg2):
-        self.field_of_arg1 = field_of_arg1
-        self.condition_number_of_arg2 = condition_number_of_arg2
-        self.field_of_arg2 = field_of_arg2
-
-    def __repr__(self):
-        return "<TestAtJoinNode WME.%s=Condition%s.%s?>" % (
-            self.field_of_arg1, self.condition_number_of_arg2,
-            self.field_of_arg2)
-
-    def __eq__(self, other):
-        return isinstance(other, TestAtJoinNode) and \
-            self.field_of_arg1 == other.field_of_arg1 and \
-            self.field_of_arg2 == other.field_of_arg2 and \
-            self.condition_number_of_arg2 == other.condition_number_of_arg2
+        new_binding = {v: getattr(wme, field) for v, field in self.vars}
+        if new_binding:
+            binding = token.binding.copy()
+            binding.update(new_binding)
+            return binding
+        else:
+            return token.binding

@@ -37,11 +37,11 @@ def test_filter_compare():
 
     assert len(list(p0.activations)) == 1
     token = list(p0.activations)[0]
-    assert token.get_binding(V('x')) == 150
+    assert token.binding[V('x')] == 150
 
     assert len(list(p1.activations)) == 1
     token = list(p1.activations)[0]
-    assert token.get_binding(V('x')) == 300
+    assert token.binding[V('x')] == 300
 
     assert len(list(p2.activations)) == 0
 
@@ -78,5 +78,5 @@ def test_bind():
     assert len(list(p2.activations)) == 0
     t0 = list(p0.activations)[0]
     t1 = list(p1.activations)[0]
-    assert t0.get_binding(V('num')) == 50
-    assert t1.get_binding(V('num')) == 10
+    assert t0.binding[V('num')] == 50
+    assert t1.binding[V('num')] == 10

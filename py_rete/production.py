@@ -20,13 +20,14 @@ from py_rete.common import Token
 
 if TYPE_CHECKING:
     from typing import Optional
+    from typing import Boolean
     from typing import Callable
     from typing import List
     from typing import Union
     from py_rete.pnode import PNode
 
 
-def compile_disjuncts(it, nest=True):
+def compile_disjuncts(it, nest: Boolean = True):
     if isinstance(it, OR):
         return tuple(compile_disjuncts(ele, nest=False) for ele in it)
     elif isinstance(it, (Production, AND)):
@@ -93,27 +94,19 @@ class Production():
     """
     A production rule in py_rete. It is comprised of conditions and a function
     to execute once all conditions are bound.
-
-    TODO:
-        - What do we do with empty conditions?
-        - What do we do with empty effects? Currently just pass None, can rules
-          ever have empty effects? Maybe ok, if they have more complicated
-          effects.
     """
-    __wrapped__: Optional[Callable]
-    id: Optional[str]
-    p_nodes: List[PNode]
     conditions: Union[ConditionalElement, ConditionalList]
 
     def __init__(self, pattern: Optional[Union[ConditionalElement,
                                                ConditionalList]] = None):
-        self.__wrapped__ = None
+        self.__wrapped__: Optional[Callable] = None
         self._wrapped_args = []
         self._rete_net = None
-        self.pattern = pattern
+        self.pattern: Optional[Union[ConditionalElement,
+                                     ConditionalList]] = pattern
 
-        self.id = None
-        self.p_nodes = []
+        self.id: Optional[str] = None
+        self.p_nodes: List[PNode] = []
 
     @property
     def activations(self):
@@ -130,60 +123,30 @@ class Production():
                 list(get_rete_conds(AND(disjunct))) for disjunct in disjuncts]
 
     def fire(self, token: Token):
-        bindings = token.all_binding()
-        # kwargs = {arg: bindings[V(arg)] for arg in self._wrapped_args if
-        #           V(arg) in bindings}
         kwargs = {arg: self._rete_net if arg == 'net' else
-                  self._rete_net.facts[bindings[V(arg)]] if
-                  bindings[V(arg)] in self._rete_net.facts else
-                  bindings[V(arg)] for arg in self._wrapped_args}
-
-        # if 'net' in self._wrapped_args:
-        #     kwargs['net'] = self._rete_net
-
+                  self._rete_net.facts[token.binding[V(arg)]] if
+                  token.binding[V(arg)] in self._rete_net.facts else
+                  token.binding[V(arg)] for arg in self._wrapped_args}
         return self(**kwargs)
 
     def __call__(self, *args, **kwargs):
-
-        # Need to see if we've already wrapped a function, if not, then do so.
         if self.__wrapped__ is None:
             if not args:
                 raise AttributeError("Apply Production as a decorator around a"
                                      " function to create a production.")
             else:
                 func = args[0]
-
                 signature = inspect.signature(func)
                 if not any(p.kind == inspect.Parameter.VAR_KEYWORD
                            for p in signature.parameters.values()):
-                    # There is not **kwargs defined. Pass only the defined
-                    # names.
                     self._wrapped_args = set(signature.parameters.keys())
-
                 return update_wrapper(self, func)
 
         else:
             if self._wrapped_args:
                 kwargs = {k: v for k, v in kwargs.items()
                           if k in self._wrapped_args}
-
-            result = self.__wrapped__(*args, **kwargs)
-
-            # # Inject the working rete_net pointer
-            # g = self.__wrapped__.__globals__
-            # sentinel = object()
-            # old_value = g.get('rete_net', sentinel)
-            # g['rete_net'] = self._rete_net
-
-            # try:
-            #     result = self.__wrapped__(*args, **kwargs)
-            # finally:
-            #     if old_value is sentinel:
-            #         del g['rete_net']
-            #     else:
-            #         g['rete_net'] = old_value
-
-            return result
+            return self.__wrapped__(*args, **kwargs)
 
     def __repr__(self) -> str:
         if self.__wrapped__ is None:
@@ -199,8 +162,3 @@ class Production():
 
     def __hash__(self):
         return hash("{}-{}".format(self.__class__.__name__, self.id))
-
-    # def get_effects(self, token: Token):
-    #     if self.rhs:
-    #         return self.rhs.bind(token.binding)
-    #     return []

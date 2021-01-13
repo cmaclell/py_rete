@@ -7,38 +7,23 @@ from py_rete.alpha import AlphaMemory
 from py_rete.beta import BetaMemory
 from py_rete.join_node import JoinNode
 
-
 if TYPE_CHECKING:
-    from typing import List
+    from typing import Dict
+    from typing import Any
+    from py_rete.common import V
     from py_rete.common import WME
 
 
 class NegativeNode(BetaMemory, JoinNode):  # type: ignore
     """
-    A beta network class that only passes on tokens when there is no match.
-
-    The left activation is called by the parent beta node.
-    The right activation is called from the alpha network (amem).
-    Test are similar to those that appear in JoinNode
-
-    TODO:
-        - should negative node be a subclass of JoinNode?
-            - perform_join_test is identical to JoinNode
-            - doesn't have Has, not sure why JoinNode does though.
-        - should this have a kind?
-
+    A beta network class that only passes on tokens when there is no match. The
+    left activation is called by the parent beta node.  The right activation is
+    called from the alpha network (amem).  Test are similar to those that
+    appear in JoinNode
     """
-    parent: JoinNode  # type: ignore
-    children: List[JoinNode]  # type: ignore
 
     def __init__(self, **kwargs):
-        """
-        :type children:
-        :type parent: BetaNode
-        :type amem: AlphaMemory
-        :type tests: list of TestAtJoinNode
-        """
-        super(NegativeNode, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def find_nearest_ancestor_with_same_amem(self, amem: AlphaMemory):
         if self.amem == amem:
@@ -49,51 +34,30 @@ class NegativeNode(BetaMemory, JoinNode):  # type: ignore
     def right_unlinked(self) -> bool:
         return len(self.items) == 0
 
-    def left_activation(self, token, wme, binding=None):
-        """
-        :type wme: rete.WME
-        :type token: rete.Token
-        :type binding: dict
-        """
+    def left_activation(self, token: Token, wme: WME, binding: Dict[V, Any]):
         if not self.items:
             self.relink_to_alpha_memory()
 
         new_token = Token(parent=token, wme=wme, node=self, binding=binding)
         self.items.append(new_token)
 
-        for item in self.amem.items:
-            if self.perform_join_test(new_token, item):
-                jr = NegativeJoinResult(new_token, item)
+        for wme in self.amem.items:
+            if self.perform_join_test(new_token, wme):
+                jr = NegativeJoinResult(new_token, wme)
                 new_token.join_results.append(jr)
-                item.negative_join_results.append(jr)
+                wme.negative_join_results.append(jr)
 
         if not new_token.join_results:
             for child in self.children:
-                child.left_activation(new_token, None)
+                child.left_activation(new_token, None, binding)
 
-    def right_activation(self, wme):
-        """
-        :type wme: rete.WME
-        """
-        for t in self.items:
-            if self.perform_join_test(t, wme):
-                if not t.join_results:
+    def right_activation(self, wme: WME):
+        for token in self.items:
+            if self.perform_join_test(token, wme):
+                if not token.join_results:
                     # TODO: TEST THIS - Chris
-                    t.delete_descendents_of_token()
+                    token.delete_descendents_of_token()
                     # t.delete_token_and_descendents()
-                jr = NegativeJoinResult(t, wme)
-                t.join_results.append(jr)
+                jr = NegativeJoinResult(token, wme)
+                token.join_results.append(jr)
                 wme.negative_join_results.append(jr)
-
-    def perform_join_test(self, token: Token, wme: WME):
-        """
-        :type token: rete.Token
-        :type wme: rete.WME
-        """
-        for this_test in self.tests:
-            arg1 = getattr(wme, this_test.field_of_arg1)
-            wme2 = token.wmes[this_test.condition_number_of_arg2]
-            arg2 = getattr(wme2, this_test.field_of_arg2)
-            if arg1 != arg2:
-                return False
-        return True

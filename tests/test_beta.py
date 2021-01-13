@@ -360,4 +360,4 @@ def test_black_white():
         net.add_wme(wme)
 
     assert len(list(p0.activations)) == 1
-    assert list(p0.activations)[0].get_binding(V('item')) == 'item:1'
+    assert list(p0.activations)[0].binding[V('item')] == 'item:1'

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from itertools import chain
+from dataclasses import dataclass
 
 from py_rete.common import V
 
@@ -25,7 +26,6 @@ class ConditionalList(tuple):
     """
     A conditional that consists of a list of other conditionals.
     """
-
     def __new__(cls, *args: List[Union[ConditionalList, ConditionalElement]]):
         return super().__new__(cls, args)
 
@@ -33,7 +33,7 @@ class ConditionalList(tuple):
         return "{}{}".format(self.__class__.__name__, super().__repr__())
 
     def __hash__(self):
-        return hash(tuple([self.__class__.__name__, tuple(self)]))
+        return hash((self.__class__.__name__, tuple(self)))
 
 
 class ComposableCond:
@@ -77,68 +77,33 @@ class NOT(ConditionalList, ComposableCond):
     pass
 
 
-# class EXISTS(ConditionalElement, ComposableCond):
-#     pass
-#
-#
-# class FORALL(ConditionalElement, ComposableCond):
-#     pass
-
-
+@dataclass(eq=True, frozen=True)
 class Cond(ConditionalElement, ComposableCond):
     """
     Essentially a pattern/condition to match, can have variables.
     """
-
-    def __init__(self, identifier: Hashable, attribute: Hashable,
-                 value: Hashable):
-        """
-        Specifies a pattern that consists of an identifier, attribute, and
-        value. Note, these should be hashable values.
-
-        Repr as: (<identifier> ^<attribute> <value>)
-        """
-        self.identifier = identifier
-        self.attribute = attribute
-        self.value = value
+    __slots__ = ['identifier', 'attribute', 'value']
+    identifier: Hashable
+    attribute: Hashable
+    value: Hashable
 
     def __repr__(self):
         return "(%s ^%s %s)" % (self.identifier, self.attribute, self.value)
 
-    def __eq__(self, other: object):
-        if not isinstance(other, Cond):
-            return False
-        return (self.__class__ == other.__class__
-                and self.identifier == other.identifier
-                and self.attribute == other.attribute
-                and self.value == other.value)
-
-    def __hash__(self):
-        return hash(tuple(['cond', self.identifier, self.attribute,
-                           self.value]))
-
     @property
     def vars(self) -> List[Tuple[str, V]]:
         """
-        Returns a list of variables with the labels for the slots they occupy.
+        Returns a list of tuples (field, var) that contains the slot names as a
+        string and the variable object it maps to.
         """
-        ret = []
-        for field in ['identifier', 'attribute', 'value']:
-            v = getattr(self, field)
-            if isinstance(v, V):
-                ret.append((field, v))
-        return ret
+        return [(field, getattr(self, field))
+                for field in ('identifier', 'attribute', 'value')
+                if isinstance(getattr(self, field), V)]
 
     def contain(self, v: V) -> str:
         """
-        Checks if a variable is in a pattern. Returns field if it is, otherwise
-        an empty string.
-
-        TODO:
-            - Why does this return an empty string on failure?
-
-        :type v: Var
-        :rtype: bool
+        Checks if a variable is in the condition. Returns as string with the
+        name of the field if it is, otherwise an empty string.
         """
         assert isinstance(v, V)
 
@@ -151,8 +116,6 @@ class Cond(ConditionalElement, ComposableCond):
     def test(self, w: WME) -> bool:
         """
         Checks if a pattern matches a working memory element.
-
-        :type w: rete.WME
         """
         for f in ['identifier', 'attribute', 'value']:
             v = getattr(self, f)
@@ -162,26 +125,24 @@ class Cond(ConditionalElement, ComposableCond):
                 return False
         return True
 
+    def __hash__(self):
+        return hash(('cond', self.identifier, self.attribute, self.value))
+
 
 class Neg(Cond):
     """
     A negated pattern.
-
-    TODO:
-        - Does this need test implemented?
     """
-
     def __repr__(self):
-        return "-(%s %s %s)" % (self.identifier, self.attribute, self.value)
+        return "-(%s ^%s %s)" % (self.identifier, self.attribute, self.value)
 
     def __hash__(self):
-        return hash(tuple(['neg', self.identifier, self.attribute,
-                           self.value]))
+        return hash(('neg', self.identifier, self.attribute, self.value))
 
 
 class Ncc(ConditionalList, ComposableCond):
     """
-    Essentially a negated AND, a negated list of conditions.
+    A negated conjunction of conditions.
     """
     def __repr__(self):
         return "-{}".format(super(Ncc, self).__repr__())
@@ -191,45 +152,39 @@ class Ncc(ConditionalList, ComposableCond):
         return len(self)
 
     def __hash__(self):
-        return hash(tuple(['ncc', tuple(self)]))
+        return hash(('ncc', tuple(self)))
 
 
+@dataclass(eq=True, frozen=True)
 class Filter(ConditionalElement, ComposableCond):
     """
-    This is a test, it includes a code snippit that might include variables.
-    When employed in rete, it replaces the variables, then executes the code.
-    The code should evalute to a boolean result.
-
-    If it does not evaluate to True, then the test fails.
+    This is a test, it includes a function that might include variables.
+    When employed in rete, the variable bindings are passed in as keyword args
+    and the function is exectued. The function must return a boolean and if it
+    evaluates to true, then the condition matches otherwise it does not.
     """
-
-    def __init__(self, tmpl: Callable) -> None:
-        self.tmpl = tmpl
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Filter) and self.tmpl == other.tmpl
-
-    def __hash__(self):
-        return hash(tuple(['filter', self.tmpl]))
-
-
-class Bind(ConditionalElement, ComposableCond):
-    """
-    This node binds the result of a code evaluation to a variable, which can
-    then be used in subsequent patterns.
-    """
-
-    def __init__(self, tmp: Callable, to: V):
-        self.tmpl = tmp
-        self.to = to
-        assert isinstance(self.to, V)
+    __slots__ = ['func']
+    func: Callable
 
     def __repr__(self):
-        return "Bind({},{})".format(repr(self.tmpl), repr(self.to))
-
-    def __eq__(self, other: object) -> bool:
-        return isinstance(other, Bind) and \
-            self.tmpl == other.tmpl and self.to == other.to
+        return "Filter({})".format(repr(self.func))
 
     def __hash__(self):
-        return hash(tuple(['bind', self.tmpl, self.to]))
+        return hash(('filter', self.func))
+
+
+@dataclass(eq=True, frozen=True)
+class Bind(ConditionalElement, ComposableCond):
+    """
+    Similar to Filter, but binds the result of a function execution to a new
+    variable.
+    """
+    __slots__ = ['func', 'to']
+    func: Callable
+    to: V
+
+    def __repr__(self):
+        return "Bind({},{})".format(repr(self.func), repr(self.to))
+
+    def __hash__(self):
+        return hash(('bind', self.func, self.to))

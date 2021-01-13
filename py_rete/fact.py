@@ -14,37 +14,33 @@ if TYPE_CHECKING:
 
 
 class Fact(dict, ComposableCond):
+    """
+    A dictionary class that decomposes into individual conditions or wmes
+    depending on the context.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
         self.id: Optional[str] = None
         self.gen_var = gen_variable()
         self.bound = False
-
         self.update(dict(chain(enumerate(args), kwargs.items())))
 
         if '__fact_type__' in self:
             raise ValueError("`__fact_type__` cannot be used, it is a reserved"
                              " keyword for matching type internally.")
 
-    def __rlshift__(self, other):
+    def __rlshift__(self, other: V):
         if not isinstance(other, V):
             raise ValueError("Can only assign facts to variables")
-
-        # fact_id_var = self.gen_var
-        # func = eval("lambda {}: {}".format(
-        #     fact_id_var.name, fact_id_var.name))
-        # return AND(self, Bind(func, other))
-
         self.gen_var = other
         self.bound = True
         return self
 
     def duplicate(self) -> Fact:
         """
-        Returns a copy of the fact without the ID set.
-
-        This is basically a shallow copy, if the fact contains other facts,
-        those are not copied.
+        Returns a copy of the fact without the ID set. This is basically a
+        shallow copy, if the fact contains other facts, they are not copied,
+        references to those facts are used.
         """
         new = Fact()
         new.update(self)
@@ -57,12 +53,10 @@ class Fact(dict, ComposableCond):
         else:
             fact_id = self.id
 
-        # Put the type condition first as it should be a quick way to narrow
-        # things down.
-        # TODO Could do something with inheritance here, where we do an OR on
-        # type. Alternatively, when we add facts to the network as wmes they
-        # get all of their parent classes.
-        yield Cond(fact_id, '__fact_type__', self.__class__)
+        # This cuts off dict, ComposableCond, and object types, don't need
+        # these to be added to the rete, just Fact and its subclasses.
+        for class_name in self.__class__.mro()[:-3]:
+            yield Cond(fact_id, '__fact_type__', class_name)
 
         for k in self:
             yield Cond(fact_id, k, self[k])
@@ -96,8 +90,8 @@ class Fact(dict, ComposableCond):
     def __hash__(self):
         return hash("{}-{}".format(self.__class__.__name__, self.id))
 
-    def __eq__(self, other):
-        if self.id != other.id:
+    def __eq__(self, other: Fact):
+        if not isinstance(other, Fact) or self.id != other.id:
             return False
 
         keys = set()

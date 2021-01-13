@@ -1,9 +1,16 @@
 from __future__ import annotations
-from typing import List
+from typing import TYPE_CHECKING
 
 from py_rete.common import Token
 from py_rete.production import Production
 from py_rete.beta import BetaMemory
+
+if TYPE_CHECKING:
+    from typing import List
+    from typing import Dict
+    from typing import Any
+    from py_rete.common import WME
+    from py_rete.common import V
 
 
 class PNode(BetaMemory):
@@ -12,19 +19,11 @@ class PNode(BetaMemory):
     """
 
     def __init__(self, production: Production, **kwargs):
-        """
-        :type items: list of Token
-        """
         super(PNode, self).__init__(**kwargs)
         self.production = production
         self.new: List[Token] = []
 
-    def left_activation(self, token, wme, binding=None):
-        """
-        :type wme: WME
-        :type token: Token
-        :type binding: dict
-        """
+    def left_activation(self, token: Token, wme: WME, binding: Dict[V, Any]):
         new_token = Token(token, wme, node=self, binding=binding)
         self.items.append(new_token)
         self.new.append(new_token)

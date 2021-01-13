@@ -47,8 +47,14 @@ class BindNode(ReteNode):
         Copies and updates the bindings with the results of the function
         execution. It then left_activates children with this binding.
         """
-        binding = binding.copy()
-        binding[self.bind] = self.get_function_result(binding)
+        result = self.get_function_result(binding)
+
+        if self.bind in binding:
+            if binding[self.bind] != result:
+                return
+        else:
+            binding = binding.copy()
+            binding[self.bind] = result
 
         for child in self.children:
             child.left_activation(token, wme, binding)

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from py_rete.common import V
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import List
     from typing import Union
     from typing import Tuple

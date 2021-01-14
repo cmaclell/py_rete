@@ -5,7 +5,7 @@ from py_rete.common import Token
 from py_rete.alpha import AlphaMemory
 from py_rete.beta import BetaMemory
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Optional
     from typing import List
     from typing import Dict

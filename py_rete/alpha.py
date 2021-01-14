@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import List
     from typing import Optional
     from py_rete.join_node import JoinNode
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class AlphaMemory:
 
     def __init__(self, items: Optional[List[WME]] = None,
-                 successors: Optional[JoinNode] = None) -> None:
+                 successors: Optional[List[JoinNode]] = None) -> None:
         """
         Stores a set of WMEs (items). If activating an activated wme does not
         exist, then it addes it. It also right activates all of its successors,

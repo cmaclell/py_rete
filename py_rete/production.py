@@ -18,16 +18,15 @@ from py_rete.fact import Fact
 from py_rete.common import V
 from py_rete.common import Token
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Optional
-    from typing import Boolean
     from typing import Callable
     from typing import List
     from typing import Union
     from py_rete.pnode import PNode
 
 
-def compile_disjuncts(it, nest: Boolean = True):
+def compile_disjuncts(it, nest: bool = True):
     if isinstance(it, OR):
         return tuple(compile_disjuncts(ele, nest=False) for ele in it)
     elif isinstance(it, (Production, AND)):
@@ -100,7 +99,7 @@ class Production():
     def __init__(self, pattern: Optional[Union[ConditionalElement,
                                                ConditionalList]] = None):
         self.__wrapped__: Optional[Callable] = None
-        self._wrapped_args = []
+        self._wrapped_args: List[str] = []
         self._rete_net = None
         self.pattern: Optional[Union[ConditionalElement,
                                      ConditionalList]] = pattern

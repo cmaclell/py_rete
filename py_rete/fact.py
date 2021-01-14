@@ -8,7 +8,7 @@ from py_rete.common import gen_variable
 from py_rete.common import WME
 from py_rete.common import V
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Generator
     from typing import Optional
 
@@ -90,7 +90,7 @@ class Fact(dict, ComposableCond):
     def __hash__(self):
         return hash("{}-{}".format(self.__class__.__name__, self.id))
 
-    def __eq__(self, other: Fact):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Fact) or self.id != other.id:
             return False
 

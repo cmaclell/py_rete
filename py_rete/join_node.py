@@ -7,9 +7,10 @@ from py_rete.common import V
 from py_rete.alpha import AlphaMemory
 from py_rete.beta import ReteNode
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Dict
-    from py_rete.conditions import Condition
+    from typing import Any
+    from py_rete.conditions import Cond
 
 
 class JoinNode(ReteNode):
@@ -32,7 +33,7 @@ class JoinNode(ReteNode):
     as above). Similarly, for matches, updated bindings are created and
     children are activated.
     """
-    def __init__(self, amem: AlphaMemory, condition: Condition, **kwargs):
+    def __init__(self, amem: AlphaMemory, condition: Cond, **kwargs):
         super().__init__(**kwargs)
         self.amem: AlphaMemory = amem
         self.condition = condition
@@ -120,7 +121,7 @@ class JoinNode(ReteNode):
                 return False
         return True
 
-    def make_binding(self, token: Token, wme: WME) -> Dict[V, any]:
+    def make_binding(self, token: Token, wme: WME) -> Dict[V, Any]:
         """
         Makes updated bindings that result from joining token and wme.
         """

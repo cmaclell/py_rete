@@ -7,7 +7,7 @@ from py_rete.alpha import AlphaMemory
 from py_rete.beta import BetaMemory
 from py_rete.join_node import JoinNode
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import Dict
     from typing import Any
     from py_rete.common import V

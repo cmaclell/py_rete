@@ -5,7 +5,7 @@ import inspect
 from py_rete.beta import ReteNode
 from py_rete.common import V
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import List
     from typing import Callable
     from py_rete.network import ReteNetwork

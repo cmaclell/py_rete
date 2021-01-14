@@ -5,7 +5,7 @@ from py_rete.common import Token
 from py_rete.production import Production
 from py_rete.beta import BetaMemory
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from typing import List
     from typing import Dict
     from typing import Any

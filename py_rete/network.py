@@ -1,9 +1,5 @@
-from typing import Generator
-from typing import Dict
-from typing import Tuple
-from typing import List
-from typing import Set
-from typing import Union
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import random
 from itertools import product
 
@@ -15,7 +11,6 @@ from py_rete.negative_node import NegativeNode
 from py_rete.join_node import JoinNode
 from py_rete.pnode import PNode
 from py_rete.common import WME
-from py_rete.common import Token
 from py_rete.common import V
 from py_rete.common import Match
 from py_rete.fact import Fact
@@ -29,6 +24,16 @@ from py_rete.conditions import Filter
 from py_rete.conditions import Bind
 from py_rete.production import Production
 
+if TYPE_CHECKING:  # pragma: no cover
+    from typing import Optional
+    from typing import Generator
+    from typing import Dict
+    from typing import Tuple
+    from typing import List
+    from typing import Set
+    from typing import Union
+    from typing import Hashable
+
 
 class ReteNetwork:
     """
@@ -36,7 +41,8 @@ class ReteNetwork:
     """
 
     def __init__(self):
-        self.alpha_hash: Dict[Tuple[str, str, str], AlphaMemory] = {}
+        self.alpha_hash: Dict[
+            Tuple[Hashable, Hashable, Hashable], AlphaMemory] = {}
         self.beta_root = ReteNode()
         self.buf = None
         self.pnodes: List[PNode] = []
@@ -125,20 +131,21 @@ class ReteNetwork:
         for wme in to_remove:
             self.remove_wme(wme)
 
-    def get_new_match(self) -> Match:
+    def get_new_match(self) -> Optional[Match]:
         for pnode in self.pnodes:
             if pnode.new:
                 t = pnode.pop_new_token()
                 return Match(pnode, t)
+        return None
 
     @property
-    def new_matches(self) -> Generator[Tuple[Production, Token], None, None]:
+    def new_matches(self) -> Generator[Match, None, None]:
         for pnode in self.pnodes:
             for t in pnode.new:
                 yield Match(pnode, t)
 
     @property
-    def matches(self) -> Generator[Tuple[Production, Token], None, None]:
+    def matches(self) -> Generator[Match, None, None]:
         for pnode in self.pnodes:
             for t in pnode.activations:
                 yield Match(pnode, t)

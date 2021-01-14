@@ -201,7 +201,8 @@ class Token:
             self.owner.ncc_results.remove(self)
             if not self.owner.ncc_results and self.node.ncc_node:
                 for bchild in self.node.ncc_node.children:
-                    bchild.left_activation(self.owner, None)
+                    bchild.left_activation(self.owner, None,
+                                           self.owner.binding)
 
 
 @dataclass(eq=True, frozen=True)

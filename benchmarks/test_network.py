@@ -25,6 +25,118 @@ def init_network():
     return net
 
 
+def test_add_remove_empty():
+    net = ReteNetwork()
+
+    @Production()
+    def empty():
+        pass
+
+    net.add_production(empty)
+    assert len(net.beta_root.children) == 1
+
+    net.remove_production(empty)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_bind():
+    net = ReteNetwork()
+
+    @Production(Bind(lambda: 5, V('x')))
+    def bind(x):
+        return x
+
+    net.add_production(bind)
+    assert len(net.beta_root.children) == 1
+    assert list(net.matches)[0].fire() == 5
+
+    net.remove_production(bind)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_filter():
+    net = ReteNetwork()
+
+    @Production(Filter(lambda: True))
+    def filter_fun():
+        pass
+
+    net.add_production(filter_fun)
+    assert len(net.beta_root.children) == 1
+
+    net.remove_production(filter_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_not():
+    net = ReteNetwork()
+
+    @Production(~Cond('a', 'on', 'b'))
+    def not_fun():
+        pass
+
+    net.add_production(not_fun)
+    assert len(net.beta_root.children) == 1
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    assert len(list(net.matches)) == 0
+
+    net.remove_wme(wme)
+    assert len(list(net.matches)) == 1
+
+    net.remove_production(not_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_join():
+    net = ReteNetwork()
+
+    @Production(Cond('a', 'on', 'b'))
+    def join_fun():
+        pass
+
+    net.add_production(join_fun)
+    assert len(net.beta_root.children) == 1
+    assert len(list(net.matches)) == 0
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.remove_wme(wme)
+    assert len(list(net.matches)) == 0
+
+    net.remove_production(join_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_ncc():
+    net = ReteNetwork()
+
+    @Production(~Fact(first="hello", second="world"))
+    def ncc_fun():
+        pass
+
+    net.add_production(ncc_fun)
+    assert len(net.beta_root.children) == 2
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    f = Fact(first='hello', second='world')
+    net.add_fact(f)
+    assert len(list(net.matches)) == 0
+
+    net.remove_fact(f)
+    assert len(list(net.matches)) == 1
+
+    net.remove_production(ncc_fun)
+    assert len(net.beta_root.children) == 0
+
+
 def test_fire():
     fire_counting()
 
@@ -41,7 +153,7 @@ def add_to_depth():
 
     net.add_fact(Fact(name="1", number=1, depth=0))
     net.add_fact(Fact(name="2", number=2, depth=0))
-    net.add_fact(Fact(name="3", number=3, depth=0))
+    # net.add_fact(Fact(name="3", number=3, depth=0))
     # net.add_fact(Fact(name="5", number=5, depth=0))
     # net.add_fact(Fact(name="7", number=7, depth=0))
 
@@ -71,7 +183,7 @@ def fire_counting():
 
     print(net)
 
-    for i in range(10):
+    for i in range(5):
         net.run(1)
         assert len(net.wmes) == (3*(i+1))+2
 

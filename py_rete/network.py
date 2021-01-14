@@ -200,6 +200,10 @@ class ReteNetwork:
         self.working_memory.add(wme)
 
     def remove_wme(self, wme: WME) -> None:
+        for stored_wme in self.working_memory:
+            if wme == stored_wme:
+                wme = stored_wme
+
         for am in wme.amems:
             am.items.remove(wme)
             if not am.items:
@@ -216,7 +220,7 @@ class ReteNetwork:
             if not jr.owner.join_results:
                 if jr.owner.node and jr.owner.node.children is not None:
                     for child in jr.owner.node.children:
-                        child.left_activation(jr.owner, None)
+                        child.left_activation(jr.owner, None, jr.owner.binding)
 
         self.working_memory.remove(wme)
 
@@ -297,9 +301,6 @@ class ReteNetwork:
                 return child
         node = BetaMemory(parent=parent)
         parent.children.append(node)
-        # dummy top beta memory
-        if parent == self.beta_root:
-            node.items.append(Token(None, None))
         self.update_new_node_with_matches_from_above(node)
         return node
 
@@ -309,8 +310,6 @@ class ReteNetwork:
                 return child
         node = PNode(production=prod, parent=parent)
         parent.children.append(node)
-        if parent == self.beta_root:
-            node.left_activation(Token(None, None), None, {})
         self.update_new_node_with_matches_from_above(node)
         return node
 
@@ -384,10 +383,14 @@ class ReteNetwork:
     def update_new_node_with_matches_from_above(self, new_node: ReteNode
                                                 ) -> None:
         parent = new_node.parent
-        if isinstance(parent, BetaMemory):
+        if parent == self.beta_root:
+            new_node.left_activation(None, None, {})
+        elif (isinstance(parent, BetaMemory) and
+                not isinstance(parent, (NccNode, NegativeNode))):
             for tok in parent.items:
                 new_node.left_activation(token=tok)
-        elif isinstance(parent, JoinNode):
+        elif (isinstance(parent, JoinNode) and
+                not isinstance(parent, NegativeNode)):
             saved_list_of_children = parent.children
             parent.children = [new_node]
             for item in parent.amem.items:
@@ -396,18 +399,15 @@ class ReteNetwork:
         elif isinstance(parent, NegativeNode):
             for token in parent.items:
                 if not token.join_results:
-                    new_node.left_activation(token, None)
+                    new_node.left_activation(token, None, token.binding)
         elif isinstance(parent, NccNode):
             for token in parent.items:
                 if not token.ncc_results:
-                    new_node.left_activation(token, None)
+                    new_node.left_activation(token, None, token.binding)
         elif isinstance(parent, (BindNode, FilterNode)):
             saved_list_of_children = parent.children
             parent.children = [new_node]
             self.update_new_node_with_matches_from_above(parent)
-            if parent.parent == self.beta_root:
-                # parent.left_activation(Token(None, None, {}), None, {})
-                parent.left_activation(Token(None, None), None, {})
             parent.children = saved_list_of_children
 
     def delete_alpha_memory(self, amem: AlphaMemory):
@@ -425,7 +425,7 @@ class ReteNetwork:
             for item in node.new_result_buffer:
                 item.delete_token_and_descendents()
 
-        if isinstance(node, JoinNode):
+        if isinstance(node, JoinNode) and not isinstance(node, NegativeNode):
             if not node.right_unlinked:
                 node.amem.successors.remove(node)
 
@@ -442,7 +442,7 @@ class ReteNetwork:
             if not node.parent.all_children:
                 self.delete_node_and_any_unused_ancestors(node.parent)
 
-        else:
+        elif node.parent:
             node.parent.children.remove(node)
             if not node.parent.children:
                 self.delete_node_and_any_unused_ancestors(node.parent)

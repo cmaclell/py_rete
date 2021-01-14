@@ -8,6 +8,7 @@ from py_rete.fact import Fact
 from py_rete.network import ReteNetwork
 from py_rete.production import Production
 from py_rete.conditions import AND
+from py_rete.conditions import Bind
 from py_rete.conditions import OR
 from py_rete.conditions import NOT
 from py_rete.conditions import Filter
@@ -148,3 +149,115 @@ def test_ncc():
     c1 = Ncc(Cond(V('x'), 'color', 'red'))
     c2 = Ncc(c0, c1)
     assert c2.number_of_conditions == 2
+
+
+def test_add_remove_empty():
+    net = ReteNetwork()
+
+    @Production()
+    def empty():
+        pass
+
+    net.add_production(empty)
+    assert len(net.beta_root.children) == 1
+
+    net.remove_production(empty)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_bind():
+    net = ReteNetwork()
+
+    @Production(Bind(lambda: 5, V('x')))
+    def bind(x):
+        return x
+
+    net.add_production(bind)
+    assert len(net.beta_root.children) == 1
+    assert list(net.matches)[0].fire() == 5
+
+    net.remove_production(bind)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_filter():
+    net = ReteNetwork()
+
+    @Production(Filter(lambda: True))
+    def filter_fun():
+        pass
+
+    net.add_production(filter_fun)
+    assert len(net.beta_root.children) == 1
+
+    net.remove_production(filter_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_not():
+    net = ReteNetwork()
+
+    @Production(~Cond('a', 'on', 'b'))
+    def not_fun():
+        pass
+
+    net.add_production(not_fun)
+    assert len(net.beta_root.children) == 1
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    assert len(list(net.matches)) == 0
+
+    net.remove_wme(wme)
+    assert len(list(net.matches)) == 1
+
+    net.remove_production(not_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_join():
+    net = ReteNetwork()
+
+    @Production(Cond('a', 'on', 'b'))
+    def join_fun():
+        pass
+
+    net.add_production(join_fun)
+    assert len(net.beta_root.children) == 1
+    assert len(list(net.matches)) == 0
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.remove_wme(wme)
+    assert len(list(net.matches)) == 0
+
+    net.remove_production(join_fun)
+    assert len(net.beta_root.children) == 0
+
+
+def test_add_remove_ncc():
+    net = ReteNetwork()
+
+    @Production(~Fact(first="hello", second="world"))
+    def ncc_fun():
+        pass
+
+    net.add_production(ncc_fun)
+    assert len(net.beta_root.children) == 2
+    assert len(list(net.matches)) == 1
+
+    wme = WME('a', 'on', 'b')
+    net.add_wme(wme)
+    f = Fact(first='hello', second='world')
+    net.add_fact(f)
+    assert len(list(net.matches)) == 0
+
+    net.remove_fact(f)
+    assert len(list(net.matches)) == 1
+
+    net.remove_production(ncc_fun)
+    assert len(net.beta_root.children) == 0

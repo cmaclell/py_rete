@@ -13,7 +13,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Optional
 
 
-class Fact(dict, ComposableCond):
+class Fact(ComposableCond, dict):
     """
     A dictionary class that decomposes into individual conditions or wmes
     depending on the context.

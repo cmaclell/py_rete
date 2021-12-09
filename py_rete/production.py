@@ -63,7 +63,7 @@ def get_rete_conds(it):
             elif len(subcond) == 1 and isinstance(subcond[0], AND):
                 yield Ncc(**subcond[0])
             else:
-                print(subcond)
+                # print(subcond)
                 yield Ncc(*subcond)
 
         elif isinstance(ele, Fact):

@@ -99,7 +99,7 @@ class ReteNetwork:
         from networkx.drawing.nx_agraph import graphviz_layout
         import matplotlib.pyplot as plt
 
-        G = nx.Graph()
+        G = nx.DiGraph()
         G.add_node("root")
 
         def get_nodes(node):
@@ -117,9 +117,13 @@ class ReteNetwork:
             if isinstance(node, AlphaMemory):
                 for k in self.alpha_hash.keys():
                     if node == self.alpha_hash[k]:
-                        return "{}:\n{}".format(k, "\n".join([str(t) for t in node.items]))
+                        return "{}:\n{} items".format(k, len(node.items))
+                        # return "{}:\n{}".format(k, "\n".join([str(t) for t in
+                        # node.items]))
             if isinstance(node, BetaMemory):
-                return "{}:\n{}".format(str(type(node)), "\n".join([str(t) for t in node.items]))
+                return "{}:\n{} items".format(str(type(node)), len(node.items))
+                # return "{}:\n{}".format(str(type(node)), "\n".join([str(t)
+                # for t in node.items]))
 
             return node
 
@@ -139,7 +143,7 @@ class ReteNetwork:
         G.add_edge('root', get_label(self.beta_root))
 
         pos = graphviz_layout(G, prog='dot')
-        nx.draw(G, pos, with_labels=True, font_weight="bold")
+        nx.draw(G, pos, with_labels=True, font_size=5)
         # nx.draw(G, with_labels=True, font_weight="bold")
         plt.show()
 

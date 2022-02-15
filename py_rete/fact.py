@@ -53,13 +53,13 @@ class Fact(ComposableCond, dict):
         else:
             fact_id = self.id
 
+        for k in self:
+            yield Cond(fact_id, k, self[k])
+
         # This cuts off dict, ComposableCond, and object types, don't need
         # these to be added to the rete, just Fact and its subclasses.
         for class_name in self.__class__.mro()[:-3]:
             yield Cond(fact_id, '__fact_type__', class_name)
-
-        for k in self:
-            yield Cond(fact_id, k, self[k])
 
     @property
     def wmes(self) -> Generator[WME, None, None]:

@@ -132,6 +132,33 @@ class Token:
     def is_root(self) -> bool:
         return not self.parent and not self.wme
 
+    def render_tokens(self):
+        import networkx as nx
+        from networkx.drawing.nx_agraph import graphviz_layout
+        import matplotlib.pyplot as plt
+
+        G = nx.Graph()
+        G.add_node(str(self))
+
+        def get_tokens(token):
+            if len(token.children) == 0:
+                return [token]
+
+            tokens = [token]
+            for c in token.children:
+                tokens += get_tokens(c)
+            return tokens
+
+        for token in get_tokens(self):
+            G.add_node(str(token))
+            if token.parent:
+                G.add_edge(str(token.parent), str(token))
+
+        pos = graphviz_layout(G, prog='dot')
+        nx.draw(G, pos, with_labels=True, font_weight="bold")
+        # nx.draw(G, with_labels=True, font_weight="bold")
+        plt.show()
+
     @property
     def wmes(self) -> List[Optional[WME]]:
         ret = [self.wme]
@@ -165,8 +192,8 @@ class Token:
         from py_rete.beta import BetaMemory
         from py_rete.join_node import JoinNode
 
-        for child in self.children:
-            child.delete_token_and_descendents()
+        while self.children:
+            self.children[0].delete_token_and_descendents()
 
         if (isinstance(self.node, BetaMemory) and not
                 isinstance(self.node, NccPartnerNode)):

@@ -81,6 +81,55 @@ class ReteNetwork:
             output += "{}\n".format(wme)
         return output
 
+    def render_graph(self):
+        import networkx as nx
+        from networkx.drawing.nx_agraph import graphviz_layout
+        import matplotlib.pyplot as plt
+
+        G = nx.Graph()
+        G.add_node("root")
+
+        def get_nodes(node):
+            if len(node.children) == 0:
+                return [node]
+
+            nodes = [node]
+            for c in node.children:
+                nodes += get_nodes(c)
+            return nodes
+
+        def get_label(node):
+            if isinstance(node, JoinNode):
+                return node.condition
+            if isinstance(node, AlphaMemory):
+                for k in self.alpha_hash.keys():
+                    if node == self.alpha_hash[k]:
+                        return "{}:\n{}".format(k, "\n".join([str(t) for t in node.items]))
+            if isinstance(node, BetaMemory):
+                return "{}:\n{}".format(str(type(node)), "\n".join([str(t) for t in node.items]))
+
+            return node
+
+        for k in self.alpha_hash.keys():
+            G.add_node(get_label(self.alpha_hash[k]))
+            G.add_edge("root", get_label(self.alpha_hash[k]))
+
+        nodes = get_nodes(self.beta_root)
+        print('nodes', len(nodes))
+        for n in nodes:
+            G.add_node(get_label(n))
+            if n.parent:
+                G.add_edge(get_label(n.parent), get_label(n))
+            if isinstance(n, JoinNode):
+                G.add_edge(get_label(n.amem), get_label(n))
+
+        G.add_edge('root', get_label(self.beta_root))
+
+        pos = graphviz_layout(G, prog='dot')
+        nx.draw(G, pos, with_labels=True, font_weight="bold")
+        # nx.draw(G, with_labels=True, font_weight="bold")
+        plt.show()
+
     def add_fact(self, fact: Fact) -> None:
         """
         Adds a fact to the network.

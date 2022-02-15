@@ -165,5 +165,29 @@ def test_facts():
     assert stored_wmes == wmes[1:]
 
 
+def test_updating_pmatch():
+
+    net = ReteNetwork()
+
+    f1 = Fact(name="hello")
+    f2 = Fact(name="world")
+    net.add_fact(f1)
+    net.add_fact(f2)
+
+    @Production(AND(Fact(name="hello"),
+                    Fact(name="world")))
+    def beep():
+        pass
+
+    net.add_production(beep)
+
+    assert len(list(net.matches)) == 1
+
+    f1['name'] = "beep"
+    net.update_fact(f1)
+
+    assert(len(list(net.matches))) == 0
+
+
 if __name__ == "__main__":
     add_to_depth()

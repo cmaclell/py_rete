@@ -268,8 +268,8 @@ class ReteNetwork:
                             not isinstance(node, NegativeNode)):
                         node.parent.children.remove(node)
 
-        for t in wme.tokens:
-            t.delete_token_and_descendents()
+        while wme.tokens:
+            wme.tokens[0].delete_token_and_descendents()
 
         for jr in wme.negative_join_results:
             jr.owner.join_results.remove(jr)

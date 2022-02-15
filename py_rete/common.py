@@ -172,8 +172,8 @@ class Token:
         """
         Helper function to delete all the descendent tokens.
         """
-        for t in self.children:
-            t.delete_token_and_descendents()
+        while self.children:
+            self.children[0].delete_token_and_descendents()
 
     def delete_token_and_descendents(self) -> None:
         """

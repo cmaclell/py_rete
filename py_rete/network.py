@@ -81,6 +81,19 @@ class ReteNetwork:
             output += "{}\n".format(wme)
         return output
 
+    def num_nodes(self):
+        def get_nodes(node):
+            if len(node.children) == 0:
+                return [node]
+
+            nodes = [node]
+            for c in node.children:
+                nodes += get_nodes(c)
+            return nodes
+
+        nodes = get_nodes(self.beta_root)
+        return len(nodes)
+
     def render_graph(self):
         import networkx as nx
         from networkx.drawing.nx_agraph import graphviz_layout
@@ -474,12 +487,12 @@ class ReteNetwork:
             self.delete_node_and_any_unused_ancestors(node.partner)
 
         if isinstance(node, BetaMemory):
-            for item in node.items:
-                item.delete_token_and_descendents()
+            while node.items:
+                node.items[0].delete_token_and_descendents()
 
         if isinstance(node, NccPartnerNode):
-            for item in node.new_result_buffer:
-                item.delete_token_and_descendents()
+            while node.new_result_buffer:
+                node.new_result_buffer[0].delete_token_and_descendents()
 
         if isinstance(node, JoinNode) and not isinstance(node, NegativeNode):
             if not node.right_unlinked:

@@ -1,6 +1,6 @@
 # py_rete
 
-[![Build Status](https://travis-ci.com/cmaclell/py_rete.svg?branch=master)](https://travis-ci.com/cmaclell/py_rete) [![Coverage Status](https://coveralls.io/repos/github/cmaclell/py_rete/badge.svg?branch=master)](https://coveralls.io/github/cmaclell/py_rete?branch=master)
+[![Build Status](https://app.travis-ci.com/cmaclell/py_rete.svg?branch=master)](https://app.travis-ci.com/cmaclell/py_rete) [![Coverage Status](https://coveralls.io/repos/github/cmaclell/py_rete/badge.svg?branch=master)](https://coveralls.io/github/cmaclell/py_rete?branch=master)
 
 ## Introduction
 

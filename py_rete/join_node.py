@@ -66,11 +66,14 @@ class JoinNode(ReteNode):
             return self
         return self.parent.find_nearest_ancestor_with_same_amem(amem)
 
-    def right_activation(self, wme: WME) -> None:
+    def right_activation(self, wme: WME, new_node=False) -> None:
         """
         Called when an element is added to the respective alpha memory.
         """
-        if self.amem_recently_nonempty:
+        # New node handles the edge case where the right activation comes from
+        # update_new_node_with_matches_from_above(...). In this case, it looks
+        # like the amem was recently non-empty, but it actually isn't the case.
+        if self.amem_recently_nonempty and not new_node:
             self.relink_to_beta_memory()
             if not self.parent.items:
                 self.amem.successors.remove(self)

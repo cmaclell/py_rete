@@ -467,7 +467,7 @@ class ReteNetwork:
             saved_list_of_children = parent.children
             parent.children = [new_node]
             for item in parent.amem.items:
-                parent.right_activation(item)
+                parent.right_activation(item, new_node=True)
             parent.children = saved_list_of_children
         elif isinstance(parent, NegativeNode):
             for token in parent.items:

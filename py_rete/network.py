@@ -262,6 +262,13 @@ class ReteNetwork:
         if wme in self.working_memory:
             return
 
+        if (wme.identifier == '#*#' or
+                wme.attribute == '#*#' or
+                wme.value == '#*#'):
+            raise ValueError("WME cannot use the value '#*#' as this is "
+                             "the wild card match symbol used internally by "
+                             "py_rete.")
+
         keys = product([wme.identifier, '#*#'],
                        [wme.attribute, '#*#'],
                        [wme.value, '#*#'])
@@ -305,6 +312,13 @@ class ReteNetwork:
         id_test = '#*#'
         attr_test = '#*#'
         value_test = '#*#'
+
+        if (condition.identifier == id_test or
+                condition.attribute == attr_test or
+                condition.value == value_test):
+            raise ValueError("Condition cannot use the value '#*#' as this is "
+                             "the wild card match symbol used internally by "
+                             "py_rete.")
 
         if not isinstance(condition.identifier, V):
             id_test = condition.identifier

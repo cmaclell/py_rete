@@ -189,5 +189,30 @@ def test_updating_pmatch():
     assert(len(list(net.matches))) == 0
 
 
+def test_rule_with_star():
+
+    # need to make sure that values are not equality to the wildcard matchers
+    # now we check for '#*#' as the matcher instead of '*'. This decreases the
+    # likelihood of collision with string with star.
+
+    net = ReteNetwork()
+
+    fo1 = Fact(id='initial_operator', value='*', contentEditable=False)
+    net.add_fact(fo1)
+
+    @Production(AND(
+        Fact(id='initial_operator', value='*', contentEditable=False),
+        ))
+    def beep():
+        pass
+
+    net.add_production(beep)
+
+    fo1['value'] = '+'
+    net.update_fact(fo1)
+
+    assert len(list(net.matches)) == 0
+
+
 if __name__ == "__main__":
     add_to_depth()

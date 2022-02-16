@@ -262,9 +262,9 @@ class ReteNetwork:
         if wme in self.working_memory:
             return
 
-        keys = product([wme.identifier, '*'],
-                       [wme.attribute, '*'],
-                       [wme.value, '*'])
+        keys = product([wme.identifier, '#*#'],
+                       [wme.attribute, '#*#'],
+                       [wme.value, '#*#'])
 
         for key in keys:
             if key in self.alpha_hash:
@@ -302,9 +302,9 @@ class ReteNetwork:
         :type condition: Condition
         :rtype: AlphaMemory
         """
-        id_test = '*'
-        attr_test = '*'
-        value_test = '*'
+        id_test = '#*#'
+        attr_test = '#*#'
+        value_test = '#*#'
 
         if not isinstance(condition.identifier, V):
             id_test = condition.identifier

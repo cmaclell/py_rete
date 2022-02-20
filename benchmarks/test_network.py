@@ -208,6 +208,8 @@ def test_rule_with_star():
 
     net.add_production(beep)
 
+    assert len(list(net.matches)) == 1
+
     fo1['value'] = '+'
     net.update_fact(fo1)
 

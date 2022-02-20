@@ -126,8 +126,10 @@ class Token:
         return "<Token %s>" % self.wmes
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, Token) and self.parent == other.parent and
-                self.wme == other.wme)
+        return id(self) == id(other)
+
+    def __hash__(self):
+        return hash(id(self))
 
     def is_root(self) -> bool:
         return not self.parent and not self.wme
@@ -190,6 +192,7 @@ class Token:
         from py_rete.ncc_node import NccPartnerNode
         from py_rete.negative_node import NegativeNode
         from py_rete.beta import BetaMemory
+        from py_rete.pnode import PNode
         from py_rete.join_node import JoinNode
 
         while self.children:
@@ -198,6 +201,9 @@ class Token:
         if (isinstance(self.node, BetaMemory) and not
                 isinstance(self.node, NccPartnerNode)):
             self.node.items.remove(self)
+
+            if isinstance(self.node, PNode):
+                self.node.new = [e for e in self.node.new if e != self]
 
         if self.wme:
             self.wme.tokens.remove(self)

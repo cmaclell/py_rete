@@ -148,7 +148,7 @@ def test_network_case1():
     t0 = Token(Token(None, None), wmes[0])
     t1 = Token(t0, wmes[4])
     t2 = Token(t1, wmes[8])
-    assert match_c0c1c2.items[0] == t2
+    assert match_c0c1c2.items[0].wme == t2.wme
 
     print(wmes[0].tokens)
     print(match_c0.items)

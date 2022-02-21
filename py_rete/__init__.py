@@ -5,3 +5,4 @@ from py_rete.network import ReteNetwork  # noqa F401
 from py_rete.conditions import AND  # noqa F401
 from py_rete.conditions import Cond  # noqa F401
 from py_rete.conditions import Filter  # noqa F401
+from py_rete.conditions import Bind  # noqa F401

@@ -121,7 +121,7 @@ class Production():
                 if isinstance(disjunct, tuple) else
                 list(get_rete_conds(AND(disjunct))) for disjunct in disjuncts]
 
-    def fire(self, token: Token):
+    def fire(self, token: Token, depth=None):
         kwargs = {arg: self._rete_net if arg == 'net' else
                   self._rete_net.facts[token.binding[V(arg)]] if
                   token.binding[V(arg)] in self._rete_net.facts else

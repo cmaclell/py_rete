@@ -32,6 +32,7 @@ class PNode(BetaMemory):
         if self.new:
             return self.new.pop()
 
+    @property
     def new_activations(self):
         while self.new:
             t = self.new.pop()

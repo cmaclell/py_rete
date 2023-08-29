@@ -40,8 +40,8 @@ class Match:
     pnode: PNode
     token: Token
 
-    def fire(self, depth=None, add_to_wm=True):
-        return self.pnode.production.fire(self.token, depth, add_to_wm)
+    def fire(self, depth=None):
+        return self.pnode.production.fire(self.token, depth)
 
 
 class WME:

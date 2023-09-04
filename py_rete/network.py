@@ -345,7 +345,7 @@ class ReteNetwork:
                                  condition: Cond) -> JoinNode:
 
         for child in parent.all_children:
-            if (type(child) == JoinNode and child.amem == amem and
+            if (isinstance(child, JoinNode) and child.amem == amem and
                     child.condition == condition):
                 return child
         node = JoinNode(children=[], parent=parent, amem=amem,
@@ -384,7 +384,7 @@ class ReteNetwork:
     def build_or_share_beta_memory(self, parent: ReteNode) -> BetaMemory:
         for child in parent.children:
             # if isinstance(child, BetaMemory):  # Don't include subclasses
-            if type(child) == BetaMemory:
+            if isinstance(child, BetaMemory):
                 return child
         node = BetaMemory(parent=parent)
         parent.children.append(node)

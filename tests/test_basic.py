@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from py_rete.conditions import Cond
 from py_rete.conditions import Ncc
+from py_rete.conditions import ConditionalList
 from py_rete.common import WME
 from py_rete.common import Token
 from py_rete.common import V
@@ -12,6 +13,7 @@ from py_rete.conditions import Bind
 from py_rete.conditions import OR
 from py_rete.conditions import NOT
 from py_rete.conditions import Filter
+from py_rete.conditions import Neg
 from py_rete.beta import BetaMemory
 from py_rete.join_node import JoinNode
 from py_rete.negative_node import NegativeNode
@@ -211,11 +213,60 @@ def test_condition_test():
     assert not c0.test(w1)
 
 
+def test_codition_hash():
+    c0 = Cond(sentinel.IDENTIFIER, sentinel.ATTRIBUTE, sentinel.VALUE)
+    assert hash(c0) == hash(('cond', sentinel.IDENTIFIER, sentinel.ATTRIBUTE, sentinel.VALUE))
+
+
+def test_condtional_list():
+    cl = ConditionalList(sentinel.C1, sentinel.C2)
+    assert repr(cl) == "ConditionalList(sentinel.C1, sentinel.C2)"
+
+    # Is this the inherited implementation from ``tuple``?
+    assert hash(cl) == hash((ConditionalList.__name__, tuple(cl)))
+
+
+def test_composable_cond():
+    and_left = AND(sentinel.L1, sentinel.L2)
+    and_right = AND(sentinel.R1, sentinel.R2)
+
+    assert and_left & and_right == AND(sentinel.L1, sentinel.L2, sentinel.R1, sentinel.R2)
+    assert OR(sentinel.L1) & and_right == AND(OR(sentinel.L1), sentinel.R1, sentinel.R2)
+    assert and_left & OR(sentinel.R1) == AND(sentinel.L1, sentinel.L2, OR(sentinel.R1))
+
+    or_left = OR(sentinel.L1, sentinel.L2)
+    or_right = OR(sentinel.R1, sentinel.R2)
+
+    assert or_left | or_right == OR(sentinel.L1, sentinel.L2, sentinel.R1, sentinel.R2)
+    assert AND(sentinel.L1) | or_right == OR(AND(sentinel.L1), sentinel.R1, sentinel.R2)
+    assert or_left | AND(sentinel.R1) == OR(sentinel.L1, sentinel.L2, AND(sentinel.R1))
+
+
+def test_neg_cond():
+    c0 = Neg(sentinel.IDENTIFIER, sentinel.ATTRIBUTE, sentinel.VALUE)
+    assert repr(c0) == "-(sentinel.IDENTIFIER ^sentinel.ATTRIBUTE sentinel.VALUE)"
+    assert hash(c0) == hash(('neg', sentinel.IDENTIFIER, sentinel.ATTRIBUTE, sentinel.VALUE))
+
+
 def test_ncc():
     c0 = Cond(V('a'), V('b'), V('c'))
     c1 = Ncc(Cond(V('x'), 'color', 'red'))
     c2 = Ncc(c0, c1)
     assert c2.number_of_conditions == 2
+    assert repr(c2) == "-Ncc((V(a) ^V(b) V(c)), -Ncc((V(x) ^color red),))"
+    assert hash(c1) == hash(('ncc', tuple(c1)))
+
+
+def test_filter():
+    c0 = Filter(sentinel.FUNC)
+    assert repr(c0) == "Filter(sentinel.FUNC)"
+    assert hash(c0) == hash(('filter', sentinel.FUNC))
+
+
+def test_bind():
+    c0 = Bind(sentinel.FUNC, sentinel.TO)
+    assert repr(c0) == "Bind(sentinel.FUNC, sentinel.TO)"
+    assert hash(c0) == hash(('bind', sentinel.FUNC, sentinel.TO))
 
 
 def test_wme_valueerror():

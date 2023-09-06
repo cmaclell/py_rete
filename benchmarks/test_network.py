@@ -9,6 +9,8 @@ from py_rete.conditions import Bind
 from py_rete.conditions import Filter
 from py_rete.network import ReteNetwork
 
+from pytest import mark
+
 
 def init_network():
     net = ReteNetwork()

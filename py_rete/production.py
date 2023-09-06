@@ -51,7 +51,11 @@ def compile_disjuncts(it, nest: bool = True):
 
 
 def get_rete_conds(it):
+    """
+    Finds Conds and converts logic (AND, OR, NOT) to Conds
+    """
     for ele in it:
+        # Should Ncc and Neg be part of this list?
         if isinstance(ele, (Cond, Bind, Filter)):
             yield ele
         elif isinstance(ele, NOT):
@@ -60,10 +64,12 @@ def get_rete_conds(it):
                 yield Neg(subcond[0].identifier,
                           subcond[0].attribute,
                           subcond[0].value)
-            elif len(subcond) == 1 and isinstance(subcond[0], AND):
+            # Not sure this is possible. See below. AND's are removed.
+            elif len(subcond) == 1 and isinstance(subcond[0], AND):  # pragma: no cover
+                # print(f"NOT AND {subcond}")
                 yield Ncc(**subcond[0])
             else:
-                # print(subcond)
+                # print(f"NOT {subcond}")
                 yield Ncc(*subcond)
 
         elif isinstance(ele, Fact):
@@ -88,6 +94,9 @@ def get_rete_conds(it):
             for cond in get_rete_conds(ele):
                 yield cond
 
+        else:
+            # Ncc and Neg appear to be silently dropped.
+            pass
 
 class Production():
     """
@@ -99,7 +108,7 @@ class Production():
     def __init__(self, pattern: Optional[Union[ConditionalElement,
                                                ConditionalList]] = None):
         self.__wrapped__: Optional[Callable] = None
-        self._wrapped_args: List[str] = []
+        self._wrapped_args: List[str] = []  # a set() is created in __call__()
         self._rete_net = None
         self.pattern: Optional[Union[ConditionalElement,
                                      ConditionalList]] = pattern
@@ -138,6 +147,7 @@ class Production():
                 signature = inspect.signature(func)
                 if not any(p.kind == inspect.Parameter.VAR_KEYWORD
                            for p in signature.parameters.values()):
+                    # A List[] is defined in the __init__() method.
                     self._wrapped_args = set(signature.parameters.keys())
                 return update_wrapper(self, func)
 

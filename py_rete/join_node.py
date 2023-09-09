@@ -1,6 +1,7 @@
 """
-Join Node: a kind of Rete Node with an alpha memory connected to its right side,
-    and another node in the beta network on the right.
+Join Node: a kind of Rete Node
+with an alpha memory connected to its right side,
+and another node in the beta network on the right.
 """
 
 from __future__ import annotations
@@ -76,9 +77,11 @@ class JoinNode(ReteNode):
         """
         Called when an element is added to the respective alpha memory.
 
-        The new_node parameter handles the edge case where the right activation comes from
-        update_new_node_with_matches_from_above(...). In this case, it looks
-        like the amem was recently non-empty, but it actually isn't the case.
+        The new_node parameter handles the edge case
+        where the right activation comes from
+        ``update_new_node_with_matches_from_above(...)``.
+        In this case, it looks like the amem was recently non-empty,
+        but it actually isn't the case.
         """
         if self.amem_recently_nonempty and not new_node:
             self.relink_to_beta_memory()

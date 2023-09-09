@@ -10,9 +10,9 @@ from py_rete.conditions import Neg
 from py_rete.conditions import Ncc
 from py_rete.production import Production, compile_disjuncts, get_rete_conds
 from py_rete.fact import Fact
-from py_rete import fact  # So we can patch fact.gen_variable
+import py_rete.fact  # So we can patch fact.gen_variable
 
-from unittest.mock import sentinel, patch, Mock
+from unittest.mock import sentinel, Mock
 from pytest import mark, raises
 
 
@@ -31,7 +31,7 @@ def test_compile_disjuncts():
     assert r5 == sentinel.SIMPLE
 
 
-def test_get_rete_conds():
+def test_get_rete_conds(monkeypatch):
     it0 = [Cond(sentinel.ID0, sentinel.ATTR0, sentinel.VAL0)]
     rc0 = list(get_rete_conds(it0))
     assert rc0 == it0
@@ -48,11 +48,11 @@ def test_get_rete_conds():
     rc3 = list(get_rete_conds(it3))
     assert rc3 == [Ncc(Bind(sentinel.FUNC3A, sentinel.TO3A), Bind(sentinel.FUNC3B, sentinel.TO3B))]
 
-    with patch('py_rete.fact.gen_variable', new=Mock(side_effect=["gv1", "gv2", "gv3", "gv4", "gv5", "gv6"])):
-        with_id_fact = Fact(name=sentinel.VALUE6)
-        with_id_fact.id = sentinel.ID
-        it4 = [Fact(name=sentinel.VALUE4, subfact=Fact(name=sentinel.VALUE5), another=with_id_fact)]
-        rc4 = list(get_rete_conds(it4))
+    monkeypatch.setattr(py_rete.fact, 'gen_variable', Mock(side_effect=["gv1", "gv2", "gv3", "gv4", "gv5", "gv6"]))
+    with_id_fact = Fact(name=sentinel.VALUE6)
+    with_id_fact.id = sentinel.ID
+    it4 = [Fact(name=sentinel.VALUE4, subfact=Fact(name=sentinel.VALUE5), another=with_id_fact)]
+    rc4 = list(get_rete_conds(it4))
     assert rc4 == [
         Cond("gv2", "name", sentinel.VALUE5),
         Cond("gv2", "__fact_type__", Fact),
@@ -63,6 +63,11 @@ def test_get_rete_conds():
         Cond("gv3", "another", sentinel.ID),
         Cond("gv3", "__fact_type__", Fact),
     ]
+
+def test_get_rete_conds_ncc_neg():
+    it5 = [Ncc(Bind(sentinel.FUNC2, sentinel.TO2))]
+    rc5 = list(get_rete_conds(it5))
+    assert rc5 == []
 
 
 def test_invalid_decoration_production():

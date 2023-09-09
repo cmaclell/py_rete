@@ -126,7 +126,8 @@ class Cond(ConditionalElement, ComposableCond):
         return True
 
     def __hash__(self):
-        # TODO: If self.__class__.__name__ used here, this may be properly inheritable.
+        # TODO: If self.__class__.__name__ used instead of a literal,
+        # this may be properly inheritable.
         return hash(('cond', self.identifier, self.attribute, self.value))
 
 

@@ -52,12 +52,13 @@ def compile_disjuncts(it, nest: bool = True):
 
 def get_rete_conds(it):
     """
-    Finds Conds and converts logic (AND, OR, NOT) to Conds
+    Finds Conds and also converts logic (AND, OR, NOT) to Conds
     """
     for ele in it:
-        # Should Ncc and Neg be part of this list?
+        # Should Ncc be part of this list for >=3.10?
         if isinstance(ele, (Cond, Bind, Filter)):
             yield ele
+
         elif isinstance(ele, NOT):
             subcond = list(get_rete_conds(ele))
             if len(subcond) == 1 and isinstance(subcond[0], Cond):
@@ -65,7 +66,10 @@ def get_rete_conds(it):
                           subcond[0].attribute,
                           subcond[0].value)
             # Not sure this is possible. See below. AND's are removed.
-            elif len(subcond) == 1 and isinstance(subcond[0], AND):  # pragma: no cover
+            elif (
+                    len(subcond) == 1 and
+                    isinstance(subcond[0], AND)
+            ):  # pragma: no cover
                 # print(f"NOT AND {subcond}")
                 yield Ncc(**subcond[0])
             else:
@@ -95,8 +99,9 @@ def get_rete_conds(it):
                 yield cond
 
         else:
-            # Ncc and Neg appear to be silently dropped.
+            # Ncc appears be silently dropped.
             pass
+
 
 class Production():
     """

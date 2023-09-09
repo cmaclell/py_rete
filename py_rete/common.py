@@ -189,7 +189,8 @@ class Token:
             - Add optimization for right unlinking (pg 87 of Doorenbois
               thesis).
 
-            - Would introducing weakref help break the circularity and simplify this?
+            - Would introducing weakref help break the circularity
+              and simplify this?
 
         :type token: Token
         """

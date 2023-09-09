@@ -1,7 +1,8 @@
 """"
 The foundational Fact used in Productions.
 
-TODO:: Replace __fact_type__ as an attribute name to avoid potential conflict with Python internals.
+TODO:: Replace __fact_type__ as an attribute name
+    This avoids *potential* conflict with Python internals.
     Use "_fact_type" to provide all the privacy that's needed.
     The built-in __class__.__name__ attribute me be sufficient.
 """

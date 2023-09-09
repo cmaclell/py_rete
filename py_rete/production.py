@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import logging
 from typing import TYPE_CHECKING
 from itertools import product
 from functools import update_wrapper
@@ -54,12 +56,15 @@ def get_rete_conds(it):
     """
     Finds Conds and also converts logic (AND, OR, NOT) to Conds
     """
+    # logger = logging.getLogger('production.get_rete_conds')
     for ele in it:
         # Should Ncc be part of this list for >=3.10?
         if isinstance(ele, (Cond, Bind, Filter)):
+            # logger.info("%s in Cond | Bind | Filter", type(ele))
             yield ele
 
         elif isinstance(ele, NOT):
+            # logger.info("%s in NOT", type(ele))
             subcond = list(get_rete_conds(ele))
             if len(subcond) == 1 and isinstance(subcond[0], Cond):
                 yield Neg(subcond[0].identifier,
@@ -77,6 +82,7 @@ def get_rete_conds(it):
                 yield Ncc(*subcond)
 
         elif isinstance(ele, Fact):
+            # logger.info("%s in Fact", type(ele))
             copy = ele.duplicate()
             copy.id = ele.id
             copy.gen_var = ele.gen_var
@@ -95,10 +101,12 @@ def get_rete_conds(it):
                 yield cond
 
         elif isinstance(ele, AND):
+            # logger.info("%s in AND", type(ele))
             for cond in get_rete_conds(ele):
                 yield cond
 
         else:
+            # logger.error("%s not matched; %s", type(ele), type(ele).mro())
             # Ncc appears be silently dropped.
             pass
 

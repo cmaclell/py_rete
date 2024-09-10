@@ -192,6 +192,11 @@ the contents of the network when they are fired. For example, the following func
 have an argument called `net` that is bound to the rete network even though there is
 no variable by that name in the production conditions.
 ```python
+>>> from py_rete.network import ReteNetwork
+>>> from py_rete.production import Production
+>>> from py_rete.fact import Fact
+>>> from py_rete.common import V
+>>>
 >>> f1 = Fact(light_color="red")
 >>> 
 >>> @Production(V('fact') << Fact(light_color="red"))

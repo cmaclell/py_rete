@@ -201,13 +201,13 @@ no variable by that name in the production conditions.
 >>> 
 >>> @Production(V('fact') << Fact(light_color="red"))
 >>> def make_green(net, fact):
->>>	print('making green')
+>>>     print('making green')
 >>>     fact['light_color'] = 'green'
 >>>     net.update_fact(fact)
 >>> 
 >>> @Production(V('fact') << Fact(light_color="green"))
 >>> def make_red(net, fact):
->>>	print('making red')
+>>>     print('making red')
 >>>     fact['light_color'] = 'red'
 >>>     net.update_fact(fact)
 >>> 
